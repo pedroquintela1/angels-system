@@ -1,0 +1,318 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+  SUPPORT
+  FINANCIAL
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  UNDER_REVIEW
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum InvestmentStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  COMPLETED
+  CANCELLED
+}
+
+enum TransactionType {
+  MEMBERSHIP_PAYMENT
+  INVESTMENT
+  RETURN
+  REFERRAL_BONUS
+  LOTTERY_PURCHASE
+  LOTTERY_PRIZE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// Models
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  phone     String?
+  cpf       String   @unique
+  birthDate DateTime
+
+  // Address
+  street     String?
+  number     String?
+  complement String?
+  district   String?
+  city       String?
+  state      String?
+  zipCode    String?
+  country    String   @default("BR")
+
+  // Status and verification
+  role         UserRole         @default(USER)
+  kycStatus    KycStatus        @default(PENDING)
+  kycSubmittedAt    DateTime?   // Quando documentos KYC foram enviados
+  kycApprovedAt     DateTime?   // Quando KYC foi aprovado
+  kycRejectedAt     DateTime?   // Quando KYC foi rejeitado
+  kycRejectionReason String?    // Motivo da rejeição do KYC
+  isActive     Boolean          @default(true)
+  emailVerified DateTime?
+
+  // Referral system
+  referralCode String  @unique
+  referredBy   String?
+  referrer     User?   @relation("UserReferrals", fields: [referredBy], references: [id])
+  referrals    User[]  @relation("UserReferrals")
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  membership    Membership?
+  investments   UserInvestment[]
+  transactions  Transaction[]
+  documents     Document[]
+  tickets       SupportTicket[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Membership {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status             MembershipStatus @default(ACTIVE)
+  monthlyFee         Float            @default(20.00)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  nextPaymentDate    DateTime
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("memberships")
+}
+
+model InvestmentOpportunity {
+  id          String @id @default(cuid())
+  title       String
+  description String
+
+  // Financial details
+  targetAmount  Float
+  currentAmount Float   @default(0)
+  minInvestment Float
+  maxInvestment Float
+
+  // Dates
+  startDate DateTime
+  endDate   DateTime
+
+  // Status and metadata
+  status InvestmentStatus @default(DRAFT)
+
+  // Relations
+  investments UserInvestment[]
+  documents   Document[]
+  returns     InvestmentReturn[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("investment_opportunities")
+}
+
+model UserInvestment {
+  id           String @id @default(cuid())
+  userId       String
+  opportunityId String
+
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity  InvestmentOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  amount       Float
+  investedAt   DateTime  @default(now())
+
+  // Relations
+  returns      InvestmentReturn[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, opportunityId])
+  @@map("user_investments")
+}
+
+model InvestmentReturn {
+  id           String @id @default(cuid())
+  opportunityId String
+  investmentId String
+
+  opportunity  InvestmentOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  investment   UserInvestment        @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+
+  totalSaleAmount    Float
+  platformFee        Float
+  netProfit          Float
+  userReturnAmount   Float
+  returnPercentage   Float
+
+  distributedAt DateTime @default(now())
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("investment_returns")
+}
+
+model Transaction {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        TransactionType
+  status      TransactionStatus @default(PENDING)
+  amount      Float
+  description String
+
+  // Payment gateway data
+  gatewayTransactionId String?
+  gatewayResponse      Json?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("transactions")
+}
+
+model Document {
+  id     String @id @default(cuid())
+  userId String?
+  opportunityId String?
+
+  user        User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity InvestmentOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  name        String
+  type        String
+  url         String
+  size        Int?
+  mimeType    String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("documents")
+}
+
+model SupportTicket {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subject     String
+  description String
+  status      TicketStatus  @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+
+  assignedTo String?
+
+  // Relations
+  messages TicketMessage[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id       String @id @default(cuid())
+  ticketId String
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  message   String
+  isFromUser Boolean @default(true)
+  isInternal Boolean @default(false)
+  authorId  String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@map("ticket_messages")
+}
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title   String
+  message String
+  type    String
+  isRead  Boolean @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+}
