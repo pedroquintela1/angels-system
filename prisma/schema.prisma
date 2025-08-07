@@ -123,6 +123,12 @@ model User {
   documents     Document[]
   tickets       SupportTicket[]
   notifications Notification[]
+  kycDocuments  KycDocument[]
+  kycReviews    KycReview[]
+
+  // KYC Reviewer relations
+  reviewedDocuments KycDocument[] @relation("KycDocumentReviewer")
+  performedReviews  KycReview[]   @relation("KycReviewer")
 
   @@map("users")
 }
@@ -315,4 +321,73 @@ model Notification {
   updatedAt DateTime @updatedAt
 
   @@map("notifications")
+}
+
+// KYC Document Types
+enum KycDocumentType {
+  IDENTITY_FRONT      // Frente do RG/CNH
+  IDENTITY_BACK       // Verso do RG/CNH
+  CPF_DOCUMENT        // Documento do CPF
+  PROOF_OF_ADDRESS    // Comprovante de residência
+  SELFIE_WITH_DOCUMENT // Selfie segurando documento
+  INCOME_PROOF        // Comprovante de renda
+  BANK_STATEMENT      // Extrato bancário
+  OTHER               // Outros documentos
+}
+
+// KYC Document Status
+enum KycDocumentStatus {
+  PENDING     // Aguardando análise
+  APPROVED    // Aprovado
+  REJECTED    // Rejeitado
+  RESUBMIT    // Precisa reenviar
+}
+
+// KYC Documents
+model KycDocument {
+  id          String            @id @default(cuid())
+  userId      String
+  type        KycDocumentType
+  fileName    String
+  filePath    String
+  fileSize    Int
+  mimeType    String
+  status      KycDocumentStatus @default(PENDING)
+
+  // Review information
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  rejectionReason String?
+  notes         String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User?       @relation("KycDocumentReviewer", fields: [reviewedBy], references: [id])
+  reviews  KycReview[]
+
+  @@map("kyc_documents")
+}
+
+// KYC Review History
+model KycReview {
+  id         String            @id @default(cuid())
+  userId     String
+  documentId String?           // Null se for review geral do KYC
+  reviewerId String
+  action     KycDocumentStatus
+  comment    String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  // Relations
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document KycDocument? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  reviewer User         @relation("KycReviewer", fields: [reviewerId], references: [id])
+
+  @@map("kyc_reviews")
 }

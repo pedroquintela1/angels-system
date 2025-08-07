@@ -10,6 +10,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface TicketData {
   ticket: {
@@ -45,6 +57,7 @@ export default function TicketDetailPage() {
   const params = useParams();
   const router = useRouter();
   const ticketId = params.id as string;
+  const { toast } = useToast();
 
   const [ticketData, setTicketData] = useState<TicketData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -115,7 +128,11 @@ export default function TicketDetailPage() {
       
       setNewMessage('');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao enviar mensagem');
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar mensagem",
+        description: err instanceof Error ? err.message : 'Erro ao enviar mensagem',
+      });
     } finally {
       setSendingMessage(false);
     }
@@ -156,9 +173,17 @@ export default function TicketDetailPage() {
         });
       }
       
-      alert(result.message || 'Ticket fechado com sucesso!');
+      toast({
+        variant: "success",
+        title: "Sucesso!",
+        description: result.message || 'Ticket fechado com sucesso!',
+      });
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao fechar ticket');
+      toast({
+        variant: "destructive",
+        title: "Erro ao fechar ticket",
+        description: err instanceof Error ? err.message : 'Erro ao fechar ticket',
+      });
     }
   };
 
@@ -352,12 +377,28 @@ export default function TicketDetailPage() {
                 {sendingMessage ? 'Enviando...' : 'Enviar Mensagem'}
               </Button>
               {ticket.isOpen && (
-                <Button 
-                  variant="outline"
-                  onClick={handleCloseTicket}
-                >
-                  Fechar Ticket
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline">
+                      Fechar Ticket
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar fechamento do ticket</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja fechar este ticket? Esta ação não pode ser desfeita.
+                        Após o fechamento, você não poderá mais enviar mensagens neste ticket.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleCloseTicket}>
+                        Fechar Ticket
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </div>
           </CardContent>

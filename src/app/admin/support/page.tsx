@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { 
-  Search, 
-  MoreHorizontal, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
+import {
+  Search,
+  MoreHorizontal,
+  Clock,
+  AlertCircle,
+  CheckCircle,
   HelpCircle,
   Users,
   MessageSquare,
@@ -16,7 +16,11 @@ import {
   AlertTriangle,
   RefreshCw,
   UserPlus,
-  Settings
+  Settings,
+  Eye,
+  Edit,
+  Trash2,
+  UserCheck
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -26,6 +30,14 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatDate } from '@/lib/utils';
 
 interface TicketStats {
@@ -113,6 +125,8 @@ export default function AdminSupportPage() {
   const { data: session } = useSession();
   const [stats, setStats] = useState<TicketStats | null>(null);
   const [ticketsData, setTicketsData] = useState<TicketsData | null>(null);
+  const [allTickets, setAllTickets] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -133,31 +147,58 @@ export default function AdminSupportPage() {
   // Estados para modais
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const [assignToAgent, setAssignToAgent] = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [processing, setProcessing] = useState(false);
 
+  // Carregar dados iniciais apenas uma vez
   useEffect(() => {
     if (session?.user) {
       fetchData();
     }
-  }, [session, filters]);
+  }, [session]);
+
+  // Aplicar filtros localmente sem recarregar da API
+  useEffect(() => {
+    if (!allTickets.length) return;
+
+    let filtered = [...allTickets];
+
+    if (filters.search) {
+      filtered = filtered.filter(ticket =>
+        ticket.subject.toLowerCase().includes(filters.search.toLowerCase()) ||
+        (typeof ticket.user === 'string' ? ticket.user : ticket.user?.name || '').toLowerCase().includes(filters.search.toLowerCase())
+      );
+    }
+
+    if (filters.status && filters.status !== 'all') {
+      filtered = filtered.filter(ticket => ticket.status === filters.status);
+    }
+
+    if (filters.priority && filters.priority !== 'all') {
+      filtered = filtered.filter(ticket => ticket.priority === filters.priority);
+    }
+
+    if (filters.assignedTo && filters.assignedTo !== 'all') {
+      if (filters.assignedTo === 'unassigned') {
+        filtered = filtered.filter(ticket => !ticket.assignedTo);
+      } else {
+        filtered = filtered.filter(ticket => ticket.assignedTo === filters.assignedTo);
+      }
+    }
+
+    setTickets(filtered);
+  }, [allTickets, filters]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      // Buscar estatísticas e tickets em paralelo
+
+      // Buscar estatísticas e todos os tickets (sem filtros para cache local)
       const [statsResponse, ticketsResponse] = await Promise.all([
         fetch('/api/admin/tickets/stats'),
-        fetch(`/api/admin/tickets?${new URLSearchParams({
-          page: filters.page.toString(),
-          limit: filters.limit.toString(),
-          ...(filters.search && { search: filters.search }),
-          ...(filters.status && { status: filters.status }),
-          ...(filters.priority && { priority: filters.priority }),
-          ...(filters.assignedTo && { assignedTo: filters.assignedTo }),
-        })}`),
+        fetch('/api/admin/tickets?limit=1000'), // Carregar todos os tickets
       ]);
 
       if (!statsResponse.ok || !ticketsResponse.ok) {
@@ -171,6 +212,12 @@ export default function AdminSupportPage() {
 
       setStats(statsData);
       setTicketsData(ticketsData);
+
+      // Armazenar todos os tickets para filtragem local
+      if (ticketsData?.tickets) {
+        setAllTickets(ticketsData.tickets);
+        setTickets(ticketsData.tickets); // Inicialmente mostrar todos
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
@@ -178,11 +225,11 @@ export default function AdminSupportPage() {
     }
   };
 
-  const handleFilterChange = (key: string, value: string) => {
+  // Função simplificada para atualizar filtros
+  const updateFilter = (key: string, value: string) => {
     setFilters(prev => ({
       ...prev,
       [key]: value,
-      page: 1, // Reset page when filtering
     }));
   };
 
@@ -198,7 +245,7 @@ export default function AdminSupportPage() {
     if (selectAll) {
       setSelectedTickets([]);
     } else {
-      setSelectedTickets(ticketsData?.tickets.map(t => t.id) || []);
+      setSelectedTickets(tickets.map(t => t.id) || []);
     }
     setSelectAll(!selectAll);
   };
@@ -219,7 +266,14 @@ export default function AdminSupportPage() {
       });
 
       if (response.ok) {
-        await fetchData(); // Recarregar dados
+        // Atualizar apenas os tickets afetados localmente
+        const updatedTickets = allTickets.map(ticket =>
+          selectedTickets.includes(ticket.id)
+            ? { ...ticket, assignedTo: assignToAgent === 'unassigned' ? null : assignToAgent }
+            : ticket
+        );
+        setAllTickets(updatedTickets);
+
         setSelectedTickets([]);
         setSelectAll(false);
         setShowAssignModal(false);
@@ -250,7 +304,14 @@ export default function AdminSupportPage() {
       });
 
       if (response.ok) {
-        await fetchData(); // Recarregar dados
+        // Atualizar apenas os tickets afetados localmente
+        const updatedTickets = allTickets.map(ticket =>
+          selectedTickets.includes(ticket.id)
+            ? { ...ticket, status: newStatus }
+            : ticket
+        );
+        setAllTickets(updatedTickets);
+
         setSelectedTickets([]);
         setSelectAll(false);
         setShowStatusModal(false);
@@ -263,6 +324,68 @@ export default function AdminSupportPage() {
       setError('Erro ao alterar status dos tickets');
     } finally {
       setProcessing(false);
+    }
+  };
+
+  // Funções para ações individuais
+  const handleViewTicket = (ticketId: string) => {
+    window.open(`/admin/support/${ticketId}`, '_blank');
+  };
+
+  const handleAssignTicket = async (ticketId: string, agentId: string) => {
+    try {
+      const response = await fetch('/api/admin/tickets/assignment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ticketId,
+          agentId,
+        }),
+      });
+
+      if (response.ok) {
+        // Atualizar ticket localmente
+        const updatedTickets = allTickets.map(ticket =>
+          ticket.id === ticketId
+            ? { ...ticket, assignedTo: agentId }
+            : ticket
+        );
+        setAllTickets(updatedTickets);
+      } else {
+        throw new Error('Erro ao atribuir ticket');
+      }
+    } catch (error) {
+      console.error('Erro ao atribuir ticket:', error);
+      setError('Erro ao atribuir ticket');
+    }
+  };
+
+  const handleChangeStatus = async (ticketId: string, status: string) => {
+    try {
+      const response = await fetch(`/api/admin/tickets/${ticketId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        // Atualizar ticket localmente
+        const updatedTickets = allTickets.map(ticket =>
+          ticket.id === ticketId
+            ? { ...ticket, status }
+            : ticket
+        );
+        setAllTickets(updatedTickets);
+      } else {
+        throw new Error('Erro ao alterar status');
+      }
+    } catch (error) {
+      console.error('Erro ao alterar status:', error);
+      setError('Erro ao alterar status do ticket');
     }
   };
 
@@ -352,13 +475,13 @@ export default function AdminSupportPage() {
           <p className="text-gray-600">Gerencie tickets e atendimento ao cliente</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowConfigModal(true)}>
             <Settings className="h-4 w-4 mr-2" />
             Configurações
           </Button>
-          <Button>
+          <Button onClick={() => setShowAssignModal(true)} disabled={selectedTickets.length === 0}>
             <UserPlus className="h-4 w-4 mr-2" />
-            Atribuir Tickets
+            Atribuir Tickets {selectedTickets.length > 0 && `(${selectedTickets.length})`}
           </Button>
         </div>
       </div>
@@ -493,13 +616,13 @@ export default function AdminSupportPage() {
                 <Input
                   placeholder="Buscar tickets..."
                   value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                  onChange={(e) => updateFilter('search', e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
 
-            <Select value={filters.status} onValueChange={(value: string) => handleFilterChange('status', value === 'all' ? '' : value)}>
+            <Select value={filters.status} onValueChange={(value: string) => updateFilter('status', value === 'all' ? '' : value)}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -512,7 +635,7 @@ export default function AdminSupportPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.priority} onValueChange={(value: string) => handleFilterChange('priority', value === 'all' ? '' : value)}>
+            <Select value={filters.priority} onValueChange={(value: string) => updateFilter('priority', value === 'all' ? '' : value)}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Prioridade" />
               </SelectTrigger>
@@ -525,7 +648,7 @@ export default function AdminSupportPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.assignedTo} onValueChange={(value: string) => handleFilterChange('assignedTo', value === 'all' ? '' : value)}>
+            <Select value={filters.assignedTo} onValueChange={(value: string) => updateFilter('assignedTo', value === 'all' ? '' : value)}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Agente" />
               </SelectTrigger>
@@ -566,7 +689,7 @@ export default function AdminSupportPage() {
               </div>
 
               {/* Tickets */}
-              {ticketsData.tickets.map((ticket) => (
+              {tickets.map((ticket) => (
                 <div
                   key={ticket.id}
                   className={`flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors ${
@@ -636,46 +759,148 @@ export default function AdminSupportPage() {
 
                     {/* Actions */}
                     <div className="col-span-1">
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleViewTicket(ticket.id)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Visualizar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleChangeStatus(ticket.id, 'IN_PROGRESS')}>
+                            <Clock className="mr-2 h-4 w-4" />
+                            Marcar em Andamento
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleChangeStatus(ticket.id, 'RESOLVED')}>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Marcar como Resolvido
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleChangeStatus(ticket.id, 'CLOSED')}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Fechar Ticket
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
               ))}
 
-              {/* Paginação */}
-              {ticketsData.pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4">
-                  <p className="text-sm text-gray-600">
-                    Mostrando {((ticketsData.pagination.page - 1) * ticketsData.pagination.limit) + 1} a{' '}
-                    {Math.min(ticketsData.pagination.page * ticketsData.pagination.limit, ticketsData.pagination.total)} de{' '}
-                    {ticketsData.pagination.total} tickets
+              {/* Mensagem quando não há tickets */}
+              {tickets.length === 0 && !loading && (
+                <div className="text-center py-8">
+                  <MessageCircle className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum ticket encontrado</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Tente ajustar os filtros ou aguarde novos tickets serem criados.
                   </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={!ticketsData.pagination.hasPrev}
-                      onClick={() => handleFilterChange('page', (filters.page - 1).toString())}
-                    >
-                      Anterior
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={!ticketsData.pagination.hasNext}
-                      onClick={() => handleFilterChange('page', (filters.page + 1).toString())}
-                    >
-                      Próximo
-                    </Button>
-                  </div>
+                </div>
+              )}
+
+              {/* Informações dos resultados */}
+              {tickets.length > 0 && (
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <p className="text-sm text-gray-600">
+                    Mostrando {tickets.length} de {allTickets.length} tickets
+                  </p>
+                  <Button variant="outline" onClick={fetchData}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Recarregar Dados
+                  </Button>
                 </div>
               )}
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Configurações */}
+      <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configurações do Sistema de Suporte</DialogTitle>
+            <DialogDescription>
+              Configure as opções do sistema de atendimento ao cliente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">Configurações Gerais</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Auto-atribuição</p>
+                    <p className="text-xs text-gray-500">Atribuir automaticamente novos tickets</p>
+                  </div>
+                  <Checkbox />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Notificações por email</p>
+                    <p className="text-xs text-gray-500">Enviar notificações para agentes</p>
+                  </div>
+                  <Checkbox />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Resposta automática</p>
+                    <p className="text-xs text-gray-500">Enviar confirmação de recebimento</p>
+                  </div>
+                  <Checkbox defaultChecked />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">SLA (Acordo de Nível de Serviço)</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Resposta inicial</label>
+                  <Select defaultValue="2">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 hora</SelectItem>
+                      <SelectItem value="2">2 horas</SelectItem>
+                      <SelectItem value="4">4 horas</SelectItem>
+                      <SelectItem value="8">8 horas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Resolução</label>
+                  <Select defaultValue="24">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="8">8 horas</SelectItem>
+                      <SelectItem value="24">24 horas</SelectItem>
+                      <SelectItem value="48">48 horas</SelectItem>
+                      <SelectItem value="72">72 horas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfigModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => setShowConfigModal(false)}>
+              Salvar Configurações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de Atribuição */}
       <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>

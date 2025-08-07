@@ -42,7 +42,8 @@ export const GET = withAuth(
       
       if (search) {
         where.OR = [
-          { name: { contains: search, mode: 'insensitive' } },
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
           { email: { contains: search, mode: 'insensitive' } },
         ];
       }
@@ -65,13 +66,13 @@ export const GET = withAuth(
           select: {
             id: true,
             email: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             role: true,
             isActive: true,
             kycStatus: true,
             createdAt: true,
             updatedAt: true,
-            lastLoginAt: true,
             // Incluir estatísticas relacionadas se necessário
             _count: {
               select: {

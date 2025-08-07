@@ -10,7 +10,8 @@ import {
   Gift,
   HelpCircle,
   Bell,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -18,6 +19,7 @@ import { signOut } from 'next-auth/react';
 import { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 import { useAuth } from '@/hooks/use-auth';
 import { UI_TEXTS } from '@/lib/translations';
 import { cn } from '@/lib/utils';
@@ -36,6 +38,11 @@ const navigation = [
     name: 'Perfil',
     href: '/dashboard/profile',
     icon: User,
+  },
+  {
+    name: 'Verificação KYC',
+    href: '/dashboard/kyc',
+    icon: Shield,
   },
   {
     name: 'Membership',
@@ -117,16 +124,21 @@ export function UserLayout({ children }: UserLayoutProps) {
 
           {/* User info */}
           <div className="border-b border-gray-200 p-4">
-            <div className="flex items-center">
-              <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
-                <span className="text-white font-medium">
-                  {user?.name?.charAt(0) || 'U'}
-                </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                  <span className="text-white font-medium">
+                    {user?.name?.charAt(0) || 'U'}
+                  </span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
               </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-              </div>
+
+              {/* Notification Bell */}
+              <NotificationBell />
             </div>
           </div>
 
