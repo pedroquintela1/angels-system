@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/middleware/auth';
 import { Resource, Action } from '@/lib/permissions';
-import { prisma } from '@/lib/prisma';
+// import { prisma } from '@/lib/prisma';
 
 export const GET = withAuth(
-  async (request: NextRequest, user) => {
+  async (/* request: NextRequest, user */) => {
     try {
 
     // Dados simulados para notificações (modelo Notification não existe ainda)

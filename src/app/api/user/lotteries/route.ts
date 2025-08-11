@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/middleware/auth';
 import { Resource, Action } from '@/lib/permissions';
-import { prisma } from '@/lib/prisma';
+// import { prisma } from '@/lib/prisma';
 
 export const GET = withAuth(
-  async (request: NextRequest, user) => {
+  async (/* request: NextRequest, user */) => {
     try {
 
     // Dados simulados para sorteios (modelo Lottery não existe ainda)
-    const currentLottery = null;
-    const userParticipations: any[] = [];
-    const pastLotteries: any[] = [];
-    const upcomingLotteries: any[] = [];
+    // const currentLottery = null;
+    // const userParticipations: any[] = [];
+    // const pastLotteries: any[] = [];
+    // const upcomingLotteries: any[] = [];
 
     // Calcular estatísticas (simuladas)
     const totalParticipations = 0;
