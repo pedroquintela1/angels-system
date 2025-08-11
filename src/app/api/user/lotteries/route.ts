@@ -73,5 +73,7 @@ export const GET = withAuth(
   {
     resource: Resource.LOTTERIES,
     action: Action.READ,
+    requireAuth: true,
+    ownershipCheck: false,
   }
 );

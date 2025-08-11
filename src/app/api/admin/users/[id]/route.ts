@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -28,8 +28,10 @@ export async function GET(
       );
     }
 
+    const { id: userId } = await params;
+
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: userId },
       include: {
         investments: {
           include: {
@@ -41,19 +43,13 @@ export async function GET(
             },
           },
         },
-        supportTickets: {
-          select: {
-            id: true,
-            subject: true,
-            status: true,
-            createdAt: true,
-          },
-        },
         membership: {
           select: {
             status: true,
-            expiresAt: true,
-            plan: true,
+            monthlyFee: true,
+            currentPeriodStart: true,
+            currentPeriodEnd: true,
+            nextPaymentDate: true,
           },
         },
       },
@@ -86,7 +82,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -97,6 +93,8 @@ export async function PATCH(
         { status: 401 }
       );
     }
+
+    const { id: userId } = await params;
 
     // Check if user has admin access
     const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
@@ -148,7 +146,7 @@ export async function PATCH(
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: userId },
     });
 
     if (!existingUser) {
@@ -159,7 +157,7 @@ export async function PATCH(
     }
 
     // Prevent self-deactivation for super admins
-    if (action === 'deactivate' && session.user.id === params.id && session.user.role === UserRole.SUPER_ADMIN) {
+    if (action === 'deactivate' && session.user.id === userId && session.user.role === UserRole.SUPER_ADMIN) {
       return NextResponse.json(
         { error: 'Você não pode desativar sua própria conta' },
         { status: 400 }
@@ -168,7 +166,7 @@ export async function PATCH(
 
     // Update user
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id: userId },
       data: {
         ...dataToUpdate,
         updatedAt: new Date(),
@@ -196,7 +194,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -208,6 +206,8 @@ export async function DELETE(
       );
     }
 
+    const { id: userId } = await params;
+
     // Only super admins can delete users
     if (session.user.role !== UserRole.SUPER_ADMIN) {
       return NextResponse.json(
@@ -217,7 +217,7 @@ export async function DELETE(
     }
 
     // Prevent self-deletion
-    if (session.user.id === params.id) {
+    if (session.user.id === userId) {
       return NextResponse.json(
         { error: 'Você não pode deletar sua própria conta' },
         { status: 400 }
@@ -226,7 +226,7 @@ export async function DELETE(
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: userId },
     });
 
     if (!existingUser) {
@@ -238,7 +238,7 @@ export async function DELETE(
 
     // Delete user (this will cascade delete related records)
     await prisma.user.delete({
-      where: { id: params.id },
+      where: { id: userId },
     });
 
     return NextResponse.json({

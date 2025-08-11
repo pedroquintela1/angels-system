@@ -98,7 +98,7 @@ export async function authorize(
     const authenticatedUser: AuthenticatedUser = {
       id: user.id,
       email: user.email,
-      name: user.name || '',
+      name: `${user.firstName} ${user.lastName}`,
       role: user.role as UserRole,
       isActive: user.isActive,
       kycStatus: user.kycStatus || 'PENDING',
@@ -135,7 +135,7 @@ export async function authorize(
           userRole: authenticatedUser.role,
         },
         {
-          ip: request.ip || 'unknown',
+          ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
           userAgent: request.headers.get('user-agent') || 'unknown',
         }
       );
@@ -174,7 +174,7 @@ export async function authorize(
           requestPath: request.url,
         },
         {
-          ip: request.ip || 'unknown',
+          ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
           userAgent: request.headers.get('user-agent') || 'unknown',
         }
       );
@@ -260,7 +260,7 @@ export async function checkOwnership(
         return ticket?.userId === userId;
         
       case Resource.INVESTMENTS:
-        const investment = await prisma.investment?.findUnique({
+        const investment = await prisma.userInvestment?.findUnique({
           where: { id: resourceId },
           select: { userId: true },
         });
@@ -298,7 +298,7 @@ export async function requireActiveMembership(userId: string): Promise<boolean> 
       where: {
         userId,
         status: 'ACTIVE',
-        expiresAt: {
+        currentPeriodEnd: {
           gt: new Date(),
         },
       },

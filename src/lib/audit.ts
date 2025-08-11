@@ -75,7 +75,7 @@ export const AuditEventSchema = z.object({
   resource: z.nativeEnum(Resource).optional(),
   action: z.nativeEnum(Action).optional(),
   resourceId: z.string().optional(),
-  details: z.record(z.any()).optional(),
+  details: z.record(z.string(), z.any()).optional(),
   metadata: z.object({
     ip: z.string().optional(),
     userAgent: z.string().optional(),
@@ -140,7 +140,9 @@ class AuditLoggerImpl implements AuditLogger {
 
       // Adicionar metadados automáticos se ainda não existirem
       if (!validatedEvent.metadata) {
-        validatedEvent.metadata = {};
+        validatedEvent.metadata = {
+          timestamp: new Date(),
+        };
       }
 
       validatedEvent.metadata = {
@@ -313,7 +315,7 @@ export async function logAuthEvent(
     userEmail,
     success,
     details,
-    metadata,
+    metadata: metadata ? { ...metadata, timestamp: new Date() } : { timestamp: new Date() },
   });
 }
 
@@ -342,7 +344,7 @@ export async function logResourceEvent(
     resourceId,
     success,
     details,
-    metadata,
+    metadata: metadata ? { ...metadata, timestamp: new Date() } : { timestamp: new Date() },
   });
 }
 
@@ -361,7 +363,7 @@ export async function logSecurityEvent(
     userEmail,
     success: false,
     details,
-    metadata,
+    metadata: metadata ? { ...metadata, timestamp: new Date() } : { timestamp: new Date() },
   });
 }
 

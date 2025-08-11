@@ -140,5 +140,7 @@ export const GET = withAuth(
   {
     resource: Resource.REFERRALS,
     action: Action.READ,
+    requireAuth: true,
+    ownershipCheck: false,
   }
 );

@@ -140,23 +140,23 @@ export default function FinancialPage() {
   };
 
   // Get transaction type badge
-  const getTransactionTypeBadge = (type: string) => {
+  const getTransactionTypeBadge = (type: string): "default" | "secondary" | "destructive" | "outline" => {
     const variants = {
-      investment: 'default',
-      commission: 'secondary',
-      withdrawal: 'outline',
-      refund: 'destructive',
+      investment: 'default' as const,
+      commission: 'secondary' as const,
+      withdrawal: 'outline' as const,
+      refund: 'destructive' as const,
     };
     return variants[type as keyof typeof variants] || 'secondary';
   };
 
   // Get status badge
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     const variants = {
-      pending: 'secondary',
-      completed: 'default',
-      failed: 'destructive',
-      cancelled: 'outline',
+      pending: 'secondary' as const,
+      completed: 'default' as const,
+      failed: 'destructive' as const,
+      cancelled: 'outline' as const,
     };
     return variants[status as keyof typeof variants] || 'secondary';
   };

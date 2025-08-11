@@ -275,6 +275,15 @@ export const PUT = withAuth(
             ...updateData,
             updatedAt: new Date(),
           },
+          include: {
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
         });
       }
 
@@ -296,7 +305,7 @@ export const PUT = withAuth(
         await prisma.ticketMessage.create({
           data: {
             ticketId: ticketId,
-            message: `Ticket atualizado por ${user.firstName} ${user.lastName}:\n${changes.join('\n')}`,
+            message: `Ticket atualizado por ${user.name}:\n${changes.join('\n')}`,
             isFromUser: false,
             authorId: user.id,
           },
@@ -345,7 +354,7 @@ export const PUT = withAuth(
           message: newMessage.message,
           isFromUser: newMessage.isFromUser,
           authorId: newMessage.authorId,
-          authorName: `${user.firstName} ${user.lastName}`,
+          authorName: `${user.name}`,
           createdAt: newMessage.createdAt,
         } : null,
         changes,

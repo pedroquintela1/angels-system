@@ -75,10 +75,8 @@ export default function OpportunitiesPage() {
   const filteredOpportunities = opportunitiesData?.opportunities.filter(opportunity => {
     const matchesSearch = opportunity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          opportunity.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || opportunity.category === selectedCategory;
-    const matchesRiskLevel = !selectedRiskLevel || opportunity.riskLevel === selectedRiskLevel;
     
-    return matchesSearch && matchesCategory && matchesRiskLevel;
+    return matchesSearch;
   }) || [];
 
   const getProgressPercentage = (current: number, target: number) => {
@@ -261,12 +259,6 @@ export default function OpportunitiesPage() {
                   <div className="flex-1">
                     <CardTitle className="text-lg mb-2">{opportunity.title}</CardTitle>
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge variant={getRiskBadgeVariant(opportunity.riskLevel)}>
-                        {getRiskLabel(opportunity.riskLevel)}
-                      </Badge>
-                      <Badge variant="outline">
-                        {getCategoryLabel(opportunity.category)}
-                      </Badge>
                       <Badge variant={opportunity.status === 'ACTIVE' ? 'info' : 'success'}>
                         {translateInvestmentStatus(opportunity.status)}
                       </Badge>

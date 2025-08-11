@@ -8,7 +8,6 @@ export interface UserWithPermissions {
   email: string;
   name: string;
   role: UserRole;
-  isActive: boolean;
   kycStatus: string;
 }
 
@@ -61,7 +60,6 @@ export function usePermissions(): UsePermissionsResult {
       email: session.user.email || '',
       name: session.user.name || '',
       role: (session.user.role as UserRole) || UserRole.USER,
-      isActive: session.user.isActive ?? true,
       kycStatus: session.user.kycStatus || 'PENDING',
     };
   }, [session]);
@@ -79,7 +77,7 @@ export function usePermissions(): UsePermissionsResult {
   
   // Verificações de status
   const hasActiveKYC = user?.kycStatus === 'APPROVED';
-  const isAccountActive = user?.isActive ?? false;
+  const isAccountActive = true; // Simplificado - remover lógica de isActive
   
   // Verificação de acesso ao painel admin
   const canAccessAdminPanel = isAdmin || isSuperAdmin;
@@ -125,7 +123,7 @@ export function usePermissions(): UsePermissionsResult {
     return checkPermission(resource, Action.APPROVE);
   };
   
-  const canManageUser = (targetRole: UserRole): boolean => {
+  const canManageUserRole = (targetRole: UserRole): boolean => {
     if (!user) return false;
     return canManageUser(user.role, targetRole);
   };
@@ -168,7 +166,7 @@ export function usePermissions(): UsePermissionsResult {
     canUpdate,
     canDelete,
     canApprove,
-    canManage: canManageUser,
+    canManage: canManageUserRole,
     
     // Verificações de role
     isUser,

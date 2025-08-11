@@ -141,7 +141,7 @@ export const GET = withAuth(
       
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Parâmetros inválidos', details: error.errors },
+          { error: 'Parâmetros inválidos', details: error.issues },
           { status: 400 }
         );
       }
@@ -155,6 +155,8 @@ export const GET = withAuth(
   {
     resource: Resource.USERS,
     action: Action.READ,
+    requireAuth: true,
+    ownershipCheck: false,
     allowedRoles: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SUPPORT],
   }
 );

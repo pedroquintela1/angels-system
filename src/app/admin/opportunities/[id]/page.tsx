@@ -129,23 +129,23 @@ export default function OpportunityDetailsPage() {
     return Math.min((current / target) * 100, 100);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     const variants = {
-      draft: 'secondary',
-      active: 'default',
-      funding: 'default',
-      funded: 'default',
-      closed: 'outline',
-      cancelled: 'destructive',
+      draft: 'secondary' as const,
+      active: 'default' as const,
+      funding: 'default' as const,
+      funded: 'default' as const,
+      closed: 'outline' as const,
+      cancelled: 'destructive' as const,
     };
     return variants[status as keyof typeof variants] || 'secondary';
   };
 
-  const getRiskBadge = (risk: string) => {
+  const getRiskBadge = (risk: string): "default" | "secondary" | "destructive" => {
     const variants = {
-      low: 'default',
-      medium: 'secondary',
-      high: 'destructive',
+      low: 'default' as const,
+      medium: 'secondary' as const,
+      high: 'destructive' as const,
     };
     return variants[risk as keyof typeof variants] || 'secondary';
   };

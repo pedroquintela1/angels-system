@@ -12,11 +12,12 @@ import {
   Settings
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { ReactNode } from 'react';
+import { ReactNode, useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 
@@ -77,10 +78,25 @@ const navigation = [
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
+  const [isPending, startTransition] = useTransition();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const handleSignOut = () => {
+    setIsNavigating(true);
     signOut({ callbackUrl: '/' });
+  };
+
+  const handleNavigation = (href: string) => {
+    if (pathname === href) return; // Não navegar se já estiver na página
+    
+    setIsNavigating(true);
+    startTransition(() => {
+      router.push(href);
+      // Reset loading após um delay
+      setTimeout(() => setIsNavigating(false), 300);
+    });
   };
 
   // Filter navigation based on user role

@@ -1,4 +1,4 @@
-import { UserRole } from '@prisma/client';
+import { UserRole, KycStatus } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 
@@ -24,7 +24,7 @@ const getDocumentTypeName = (type: string) => {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -45,7 +45,7 @@ export async function GET(
       );
     }
 
-    const userId = await params.id;
+    const { id: userId } = await params;
 
     // Get user with KYC documents
     const user = await prisma.user.findUnique({
@@ -157,7 +157,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -178,7 +178,7 @@ export async function POST(
       );
     }
 
-    const userId = await params.id;
+    const { id: userId } = await params;
     const body = await request.json();
     const { documentId, action, comment } = body;
 
@@ -252,15 +252,15 @@ export async function POST(
       userDocuments.some(doc => doc.type === type && doc.status === 'APPROVED')
     );
 
-    let newKycStatus = 'PENDING';
+    let newKycStatus: KycStatus = KycStatus.PENDING;
     let kycApprovedAt = null;
     let kycRejectedAt = null;
 
     if (approvedRequiredDocs.length === requiredDocuments.length) {
-      newKycStatus = 'APPROVED';
+      newKycStatus = KycStatus.APPROVED;
       kycApprovedAt = new Date();
     } else if (userDocuments.some(doc => doc.status === 'REJECTED')) {
-      newKycStatus = 'REJECTED';
+      newKycStatus = KycStatus.REJECTED;
       kycRejectedAt = new Date();
     }
 
@@ -309,7 +309,7 @@ export async function POST(
         await notificationService.createKycNotification(userId, 'REJECTED', documentTypeName, comment);
       } else if (action === 'RESUBMIT') {
         await emailService.sendKycDocumentResubmit(user.email, userName, documentTypeName, comment || 'Por favor, reenvie o documento');
-        await notificationService.createKycNotification(userId, 'RESUBMIT', documentTypeName, undefined, comment);
+        await notificationService.createKycNotification(userId, 'RESUBMIT', documentTypeName, comment);
       }
 
       // Send KYC complete notification if all documents are approved

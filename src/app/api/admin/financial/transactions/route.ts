@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get investments (main transaction type)
-    const investments = await prisma.investment.findMany({
+    const investments = await prisma.userInvestment.findMany({
       where,
       include: {
         user: {
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       id: investment.id,
       type: 'investment' as const,
       amount: investment.amount,
-      status: investment.status.toLowerCase(),
+      status: 'confirmed',
       description: `Investimento em ${investment.opportunity?.title || 'Oportunidade'}`,
       userId: investment.userId,
       userName: `${investment.user.firstName} ${investment.user.lastName}`,
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get total count for pagination
-    const totalCount = await prisma.investment.count({ where });
+    const totalCount = await prisma.userInvestment.count({ where });
 
     return NextResponse.json({
       transactions,
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
 
     if (type === 'investment' && opportunityId) {
       // Validate opportunity exists
-      const opportunity = await prisma.opportunity.findUnique({
+      const opportunity = await prisma.investmentOpportunity.findUnique({
         where: { id: opportunityId },
         select: { id: true, title: true },
       });
@@ -191,14 +191,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      transaction = await prisma.investment.create({
+      transaction = await prisma.userInvestment.create({
         data: {
           amount: parseFloat(amount),
-          status: status.toUpperCase(),
           userId,
           opportunityId,
-          // Add a note that this was manually created
-          notes: `Transação manual: ${description}`,
         },
         include: {
           user: {
@@ -223,7 +220,7 @@ export async function POST(request: NextRequest) {
         id: transaction.id,
         type: 'investment' as const,
         amount: transaction.amount,
-        status: transaction.status.toLowerCase(),
+        status: 'confirmed',
         description: `Investimento em ${transaction.opportunity?.title || 'Oportunidade'}`,
         userId: transaction.userId,
         userName: `${transaction.user.firstName} ${transaction.user.lastName}`,

@@ -8,7 +8,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,7 +20,7 @@ export async function GET(
       );
     }
 
-    const documentId = params.id;
+    const { id: documentId } = await params;
 
     // Get document from database
     const document = await prisma.kycDocument.findFirst({
@@ -52,7 +52,7 @@ export async function GET(
       headers.set('Cache-Control', 'private, max-age=3600');
       headers.set('ETag', `"${document.id}"`);
 
-      return new NextResponse(fileBuffer, {
+      return new NextResponse(new Uint8Array(fileBuffer), {
         status: 200,
         headers,
       });

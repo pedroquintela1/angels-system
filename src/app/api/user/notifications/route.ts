@@ -109,5 +109,7 @@ export const GET = withAuth(
   {
     resource: Resource.NOTIFICATIONS,
     action: Action.READ,
+    requireAuth: true,
+    ownershipCheck: false,
   }
 );

@@ -20,7 +20,8 @@ import {
   Eye,
   Edit,
   Trash2,
-  UserCheck
+  UserCheck,
+  MessageCircle
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';

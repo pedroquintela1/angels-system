@@ -161,7 +161,7 @@ export default function ReferralsPage() {
     return null;
   }
 
-  const { referralCode, referralLink, stats, referrals, bonusHistory, bonusStructure } = referralData;
+  const { referralCode, stats, referrals, bonusHistory } = referralData;
 
   // Simular níveis baseado no número de indicações
   const levels = [
@@ -457,9 +457,9 @@ export default function ReferralsPage() {
                 <div key={referral.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <h4 className="font-medium text-gray-900">
-                      {referral.name}
+                      {referral.referredUser.firstName} {referral.referredUser.lastName}
                     </h4>
-                    <p className="text-sm text-gray-600">{referral.email}</p>
+                    <p className="text-sm text-gray-600">{referral.referredUser.email}</p>
                     <p className="text-sm text-gray-500">
                       Cadastrou-se em {formatDate(referral.joinedAt)}
                       {referral.firstInvestmentAt && (
@@ -468,8 +468,8 @@ export default function ReferralsPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <Badge variant={getStatusBadgeVariant(referral.membershipStatus)}>
-                      {getStatusLabel(referral.membershipStatus)}
+                    <Badge variant={getStatusBadgeVariant(referral.status)}>
+                      {getStatusLabel(referral.status)}
                     </Badge>
                     <p className="text-sm text-gray-600 mt-1">
                       Investiu: {formatCurrency(referral.totalInvested)}

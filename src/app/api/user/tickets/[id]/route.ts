@@ -265,7 +265,7 @@ export const POST = withAuth(
           isFromUser: message.isFromUser,
           authorId: message.authorId,
           createdAt: message.createdAt,
-          author: `${user.firstName} ${user.lastName}`,
+          author: `${user.name}`,
         },
         ticket: {
           id: updatedTicket.id,

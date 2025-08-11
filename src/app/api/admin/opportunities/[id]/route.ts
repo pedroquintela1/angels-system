@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/middleware/auth';
+import { withAuth, AuthenticatedUser } from '@/lib/middleware/auth';
 import { Resource, Action } from '@/lib/permissions';
 import { logResourceEvent, AuditEventType } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
@@ -19,9 +19,12 @@ const UpdateOpportunitySchema = z.object({
 
 // GET - Buscar oportunidade específica (Admin)
 export const GET = withAuth(
-  async (request: NextRequest, user, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, user: AuthenticatedUser) => {
     try {
-      const opportunityId = params.id;
+      // Extrair ID da URL
+      const url = new URL(request.url);
+      const pathSegments = url.pathname.split('/');
+      const opportunityId = pathSegments[pathSegments.length - 1];
 
       if (!opportunityId) {
         return NextResponse.json(
@@ -57,9 +60,9 @@ export const GET = withAuth(
               returns: {
                 select: {
                   id: true,
-                  amount: true,
-                  type: true,
-                  paidAt: true,
+                  userReturnAmount: true,
+                  returnPercentage: true,
+                  distributedAt: true,
                 },
               },
             },
@@ -70,9 +73,9 @@ export const GET = withAuth(
           returns: {
             select: {
               id: true,
-              amount: true,
-              type: true,
-              paidAt: true,
+              userReturnAmount: true,
+              returnPercentage: true,
+              distributedAt: true,
               investment: {
                 select: {
                   user: {
@@ -86,7 +89,7 @@ export const GET = withAuth(
               },
             },
             orderBy: {
-              paidAt: 'desc',
+              distributedAt: 'desc',
             },
           },
           _count: {
@@ -107,12 +110,12 @@ export const GET = withAuth(
       }
 
       // Calcular estatísticas
-      const totalInvested = opportunity.investments.reduce((sum, inv) => sum + inv.amount, 0);
-      const totalReturns = opportunity.returns.reduce((sum, ret) => sum + ret.amount, 0);
+      const totalInvested = opportunity.investments.reduce((sum: number, inv: any) => sum + inv.amount, 0);
+      const totalReturns = opportunity.returns.reduce((sum: number, ret: any) => sum + ret.userReturnAmount, 0);
       const completionPercentage = (totalInvested / opportunity.targetAmount) * 100;
 
       // Processar dados dos investimentos
-      const processedInvestments = opportunity.investments.map(investment => ({
+      const processedInvestments = opportunity.investments.map((investment: any) => ({
         id: investment.id,
         amount: investment.amount,
         investedAt: investment.investedAt,
@@ -121,13 +124,13 @@ export const GET = withAuth(
           name: `${investment.user.firstName} ${investment.user.lastName}`,
           email: investment.user.email,
         },
-        returns: investment.returns.map(ret => ({
+        returns: investment.returns.map((ret: any) => ({
           id: ret.id,
-          amount: ret.amount,
-          type: ret.type,
-          paidAt: ret.paidAt,
+          amount: ret.userReturnAmount,
+          returnPercentage: ret.returnPercentage,
+          distributedAt: ret.distributedAt,
         })),
-        totalReturns: investment.returns.reduce((sum, ret) => sum + ret.amount, 0),
+        totalReturns: investment.returns.reduce((sum: number, ret: any) => sum + ret.userReturnAmount, 0),
       }));
 
       // Log de auditoria
@@ -167,23 +170,23 @@ export const GET = withAuth(
           
           // Estatísticas
           statistics: {
-            investorsCount: opportunity._count.investments,
-            documentsCount: opportunity._count.documents,
-            returnsCount: opportunity._count.returns,
+            investorsCount: opportunity._count?.investments || 0,
+            documentsCount: opportunity._count?.documents || 0,
+            returnsCount: opportunity._count?.returns || 0,
             totalInvested,
             totalReturns,
             completionPercentage,
-            averageInvestment: opportunity._count.investments > 0 ? totalInvested / opportunity._count.investments : 0,
+            averageInvestment: (opportunity._count?.investments || 0) > 0 ? totalInvested / (opportunity._count?.investments || 1) : 0,
           },
           
           // Dados detalhados
           investments: processedInvestments,
-          documents: opportunity.documents,
-          returns: opportunity.returns.map(ret => ({
+          documents: opportunity.documents || [],
+          returns: (opportunity.returns || []).map((ret: any) => ({
             id: ret.id,
-            amount: ret.amount,
-            type: ret.type,
-            paidAt: ret.paidAt,
+            amount: ret.userReturnAmount,
+            returnPercentage: ret.returnPercentage,
+            distributedAt: ret.distributedAt,
             investor: ret.investment ? {
               name: `${ret.investment.user.firstName} ${ret.investment.user.lastName}`,
               email: ret.investment.user.email,
@@ -210,9 +213,13 @@ export const GET = withAuth(
 
 // PUT - Atualizar oportunidade (Admin)
 export const PUT = withAuth(
-  async (request: NextRequest, user, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, user: AuthenticatedUser) => {
     try {
-      const opportunityId = params.id;
+      // Extrair ID da URL
+      const url = new URL(request.url);
+      const pathSegments = url.pathname.split('/');
+      const opportunityId = pathSegments[pathSegments.length - 1];
+      
       const body = await request.json();
       const validatedData = UpdateOpportunitySchema.parse(body);
 
@@ -354,7 +361,7 @@ export const PUT = withAuth(
       
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Dados inválidos', details: error.errors },
+          { error: 'Dados inválidos', details: error.issues },
           { status: 400 }
         );
       }
@@ -375,9 +382,12 @@ export const PUT = withAuth(
 
 // DELETE - Excluir oportunidade (Admin)
 export const DELETE = withAuth(
-  async (request: NextRequest, user, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, user: AuthenticatedUser) => {
     try {
-      const opportunityId = params.id;
+      // Extrair ID da URL
+      const url = new URL(request.url);
+      const pathSegments = url.pathname.split('/');
+      const opportunityId = pathSegments[pathSegments.length - 1];
 
       if (!opportunityId) {
         return NextResponse.json(

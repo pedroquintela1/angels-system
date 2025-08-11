@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -40,13 +39,12 @@ export async function GET(request: NextRequest) {
     previousStartDate.setDate(previousStartDate.getDate() - period);
 
     // Get current period metrics
-    const currentPeriodInvestments = await prisma.investment.aggregate({
+    const currentPeriodInvestments = await prisma.userInvestment.aggregate({
       where: {
         createdAt: {
           gte: startDate,
           lte: endDate,
         },
-        status: 'CONFIRMED',
       },
       _sum: {
         amount: true,
@@ -55,13 +53,12 @@ export async function GET(request: NextRequest) {
     });
 
     // Get previous period for comparison
-    const previousPeriodInvestments = await prisma.investment.aggregate({
+    const previousPeriodInvestments = await prisma.userInvestment.aggregate({
       where: {
         createdAt: {
           gte: previousStartDate,
           lt: startDate,
         },
-        status: 'CONFIRMED',
       },
       _sum: {
         amount: true,
@@ -69,10 +66,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get total metrics
-    const totalInvestments = await prisma.investment.aggregate({
-      where: {
-        status: 'CONFIRMED',
-      },
+    const totalInvestments = await prisma.userInvestment.aggregate({
       _sum: {
         amount: true,
       },
@@ -83,12 +77,11 @@ export async function GET(request: NextRequest) {
     currentMonth.setDate(1);
     currentMonth.setHours(0, 0, 0, 0);
 
-    const monthlyInvestments = await prisma.investment.aggregate({
+    const monthlyInvestments = await prisma.userInvestment.aggregate({
       where: {
         createdAt: {
           gte: currentMonth,
         },
-        status: 'CONFIRMED',
       },
       _sum: {
         amount: true,
@@ -104,15 +97,13 @@ export async function GET(request: NextRequest) {
     const activeInvestors = await prisma.user.count({
       where: {
         investments: {
-          some: {
-            status: 'CONFIRMED',
-          },
+          some: {},
         },
       },
     });
 
     // Get pending transactions count
-    const pendingTransactions = await prisma.investment.count({
+    const pendingTransactions = await prisma.transaction.count({
       where: {
         status: 'PENDING',
       },
@@ -148,13 +139,12 @@ export async function GET(request: NextRequest) {
       const monthEnd = new Date(monthStart);
       monthEnd.setMonth(monthEnd.getMonth() + 1);
 
-      const monthInvestments = await prisma.investment.aggregate({
+      const monthInvestments = await prisma.userInvestment.aggregate({
         where: {
           createdAt: {
             gte: monthStart,
             lt: monthEnd,
           },
-          status: 'CONFIRMED',
         },
         _sum: {
           amount: true,

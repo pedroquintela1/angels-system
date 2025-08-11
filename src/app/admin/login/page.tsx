@@ -27,26 +27,38 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('🔄 Iniciando processo de login...');
     setLoading(true);
     setError('');
 
     try {
+      // Mostrar feedback imediato
+      console.log('📧 Fazendo login com:', formData.email);
+      
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
         redirect: false,
       });
 
+      console.log('✅ Resultado do signIn:', result);
+
       if (result?.error) {
+        console.log('❌ Erro no signIn:', result.error);
         setError('Credenciais inválidas');
         return;
       }
 
       // Verificar se o usuário tem permissão de admin
+      console.log('🔍 Verificando permissões de admin...');
       const sessionResponse = await fetch('/api/auth/session');
       const session = await sessionResponse.json();
 
+      console.log('👤 Sessão obtida:', session);
+
       if (!session?.user) {
+        console.log('❌ Sessão inválida');
         setError('Erro ao verificar sessão');
         return;
       }
@@ -54,16 +66,22 @@ export default function AdminLoginPage() {
       // Verificar se tem role de admin
       const allowedRoles = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT', 'FINANCIAL'];
       if (!allowedRoles.includes(session.user.role)) {
+        console.log('❌ Role não permitido:', session.user.role);
         setError('Acesso negado. Você não tem permissões administrativas.');
         return;
       }
 
+      // Feedback de sucesso antes do redirecionamento
+      console.log('🎉 Login bem-sucedido! Redirecionando para /admin');
+      
       // Redirecionar para o painel admin
       router.push('/admin');
       
     } catch (error) {
+      console.error('💥 Erro crítico no login:', error);
       setError('Erro interno. Tente novamente.');
     } finally {
+      console.log('🏁 Finalizando processo de login');
       setLoading(false);
     }
   };
@@ -98,6 +116,13 @@ export default function AdminLoginPage() {
                 </div>
               )}
 
+              {loading && (
+                <div className="bg-blue-500/20 border border-blue-500/50 text-blue-200 px-4 py-3 rounded-md text-sm flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-transparent"></div>
+                  Processando login, aguarde...
+                </div>
+              )}
+
               <Input
                 label="Email"
                 type="email"
@@ -122,11 +147,18 @@ export default function AdminLoginPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
                 loading={loading}
                 disabled={loading}
               >
-                {loading ? 'Verificando...' : 'Acessar Painel'}
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    Verificando credenciais...
+                  </div>
+                ) : (
+                  'Acessar Painel'
+                )}
               </Button>
             </form>
 

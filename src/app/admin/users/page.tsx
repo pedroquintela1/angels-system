@@ -64,7 +64,7 @@ interface UserFilters {
 }
 
 export default function UsersManagementPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,10 +106,10 @@ export default function UsersManagementPage() {
 
   // Carregar dados iniciais apenas uma vez
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user && status === 'authenticated') {
       fetchUsers();
     }
-  }, [session]);
+  }, [session, status]);
 
   // Aplicar filtros localmente sem recarregar da API
   useEffect(() => {
@@ -148,10 +148,22 @@ export default function UsersManagementPage() {
     try {
       setLoading(true);
 
+      // Verificar se está autenticado antes de fazer a chamada
+      if (!session?.user || status !== 'authenticated') {
+        console.log('Não autenticado, aguardando sessão...');
+        return;
+      }
+
       // Carregar todos os usuários sem filtros para cache local
-      const response = await fetch('/api/admin/users');
+      const response = await fetch('/api/admin/users', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
       if (!response.ok) {
-        throw new Error('Erro ao carregar usuários');
+        throw new Error(`Erro ao carregar usuários: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();

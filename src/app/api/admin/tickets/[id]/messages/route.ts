@@ -27,8 +27,7 @@ export const GET = withAuth(
       const url = new URL(request.url);
       const pathSegments = url.pathname.split('/');
       const ticketId = pathSegments[pathSegments.length - 2]; // -2 porque o último é 'messages'
-      const ticketId = params.id;
-      const { searchParams } = new URL(request.url);
+      const { searchParams } = url;
       
       const filters = {
         page: parseInt(searchParams.get('page') || '1'),
@@ -294,6 +293,15 @@ export const POST = withAuth(
             status: validatedData.updateStatus,
             updatedAt: new Date(),
           },
+          include: {
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
         });
 
         // Adicionar mensagem automática sobre mudança de status
@@ -301,7 +309,7 @@ export const POST = withAuth(
           await prisma.ticketMessage.create({
             data: {
               ticketId: ticketId,
-              message: `Status do ticket alterado de ${ticket.status} para ${validatedData.updateStatus} por ${user.firstName} ${user.lastName}`,
+              message: `Status do ticket alterado de ${ticket.status} para ${validatedData.updateStatus} por ${user.name}`,
               isFromUser: false,
               isInternal: false,
               authorId: user.id,
@@ -313,6 +321,15 @@ export const POST = withAuth(
         updatedTicket = await prisma.supportTicket.update({
           where: { id: ticketId },
           data: { updatedAt: new Date() },
+          include: {
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
         });
       }
 
@@ -351,7 +368,7 @@ export const POST = withAuth(
           createdAt: message.createdAt,
           author: {
             id: user.id,
-            name: `${user.firstName} ${user.lastName}`,
+            name: `${user.name}`,
             email: user.email,
             role: user.role,
           },

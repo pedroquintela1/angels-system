@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/middleware/auth';
+import { withAuth, AuthenticatedUser } from '@/lib/middleware/auth';
 import { prisma } from '@/lib/prisma';
-import { logResourceEvent } from '@/lib/audit';
+import { logResourceEvent, AuditEventType } from '@/lib/audit';
+import { Resource, Action, UserRole } from '@/lib/permissions';
 import { z } from 'zod';
 
 const BulkAssignSchema = z.object({
@@ -10,7 +11,7 @@ const BulkAssignSchema = z.object({
 });
 
 export const POST = withAuth(
-  async (request: NextRequest, user) => {
+  async (request: NextRequest, user: AuthenticatedUser) => {
     try {
       const body = await request.json();
       const { ticketIds, assignedTo } = BulkAssignSchema.parse(body);
@@ -65,23 +66,23 @@ export const POST = withAuth(
       });
 
       // Log de auditoria
-      await logResourceEvent({
-        eventType: 'RESOURCE_UPDATE',
-        severity: 'MEDIUM',
-        userId: user.id,
-        userEmail: user.email,
-        userRole: user.role,
-        resource: 'support_tickets',
-        action: 'bulk_assign',
-        resourceId: ticketIds.join(','),
-        success: true,
-        details: {
+      await logResourceEvent(
+        AuditEventType.RESOURCE_UPDATE,
+        Resource.SUPPORT_TICKETS,
+        Action.ASSIGN,
+        user.id,
+        user.email,
+        user.role,
+        ticketIds.join(','),
+        true,
+        {
           ticketIds,
           assignedTo,
           updatedCount: updatedTickets.count,
-          adminAction: true
+          adminAction: true,
+          timestamp: new Date().toISOString()
         }
-      });
+      );
 
       return NextResponse.json({
         success: true,
@@ -93,24 +94,25 @@ export const POST = withAuth(
       console.error('Erro na atribuição em lote:', error);
 
       // Log de erro
-      await logResourceEvent({
-        eventType: 'RESOURCE_UPDATE',
-        severity: 'HIGH',
-        userId: user.id,
-        userEmail: user.email,
-        userRole: user.role,
-        resource: 'support_tickets',
-        action: 'bulk_assign',
-        success: false,
-        details: {
+      await logResourceEvent(
+        AuditEventType.RESOURCE_UPDATE,
+        Resource.SUPPORT_TICKETS,
+        Action.ASSIGN,
+        user.id,
+        user.email,
+        user.role,
+        'bulk-assign-error',
+        false,
+        {
           error: error instanceof Error ? error.message : 'Erro desconhecido',
-          adminAction: true
+          adminAction: true,
+          timestamp: new Date().toISOString()
         }
-      });
+      );
 
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Dados inválidos', details: error.errors },
+          { error: 'Dados inválidos', details: error.issues },
           { status: 400 }
         );
       }
@@ -122,8 +124,10 @@ export const POST = withAuth(
     }
   },
   {
-    requiredRole: 'SUPPORT',
-    resource: 'support_tickets',
-    action: 'update'
+    resource: Resource.SUPPORT_TICKETS,
+    action: Action.ASSIGN,
+    requireAuth: true,
+    ownershipCheck: false,
+    allowedRoles: [UserRole.SUPPORT, UserRole.ADMIN, UserRole.SUPER_ADMIN]
   }
 );

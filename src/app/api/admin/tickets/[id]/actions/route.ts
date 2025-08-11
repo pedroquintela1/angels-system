@@ -90,7 +90,7 @@ export const POST = withAuth(
           updateData.assignedTo = assignedTo;
           updateData.status = ticket.status === 'OPEN' ? 'IN_PROGRESS' : ticket.status;
           successMessage = `Ticket atribuído para ${agent.firstName} ${agent.lastName}`;
-          systemMessage = `Ticket atribuído para ${agent.firstName} ${agent.lastName} por ${user.firstName} ${user.lastName}`;
+          systemMessage = `Ticket atribuído para ${agent.firstName} ${agent.lastName} por ${user.name}`;
           break;
 
         case 'unassign':
@@ -104,7 +104,7 @@ export const POST = withAuth(
           updateData.assignedTo = null;
           updateData.status = 'OPEN';
           successMessage = 'Ticket desatribuído com sucesso';
-          systemMessage = `Ticket desatribuído por ${user.firstName} ${user.lastName}`;
+          systemMessage = `Ticket desatribuído por ${user.name}`;
           break;
 
         case 'resolve':
@@ -117,7 +117,7 @@ export const POST = withAuth(
           
           updateData.status = 'RESOLVED';
           successMessage = 'Ticket marcado como resolvido';
-          systemMessage = `Ticket resolvido por ${user.firstName} ${user.lastName}`;
+          systemMessage = `Ticket resolvido por ${user.name}`;
           if (reason) {
             systemMessage += `\nMotivo: ${reason}`;
           }
@@ -133,7 +133,7 @@ export const POST = withAuth(
           
           updateData.status = 'CLOSED';
           successMessage = 'Ticket fechado com sucesso';
-          systemMessage = `Ticket fechado por ${user.firstName} ${user.lastName}`;
+          systemMessage = `Ticket fechado por ${user.name}`;
           if (reason) {
             systemMessage += `\nMotivo: ${reason}`;
           }
@@ -149,7 +149,7 @@ export const POST = withAuth(
           
           updateData.status = ticket.assignedTo ? 'IN_PROGRESS' : 'OPEN';
           successMessage = 'Ticket reaberto com sucesso';
-          systemMessage = `Ticket reaberto por ${user.firstName} ${user.lastName}`;
+          systemMessage = `Ticket reaberto por ${user.name}`;
           if (reason) {
             systemMessage += `\nMotivo: ${reason}`;
           }
@@ -170,7 +170,7 @@ export const POST = withAuth(
           updateData.priority = newPriority;
           updateData.status = ticket.status === 'OPEN' ? 'IN_PROGRESS' : ticket.status;
           successMessage = `Ticket escalado para prioridade ${newPriority}`;
-          systemMessage = `Ticket escalado de ${ticket.priority} para ${newPriority} por ${user.firstName} ${user.lastName}`;
+          systemMessage = `Ticket escalado de ${ticket.priority} para ${newPriority} por ${user.name}`;
           if (reason) {
             systemMessage += `\nMotivo: ${reason}`;
           }
@@ -259,7 +259,7 @@ export const POST = withAuth(
           message,
           executedBy: {
             id: user.id,
-            name: `${user.firstName} ${user.lastName}`,
+            name: `${user.name}`,
             email: user.email,
             role: user.role,
           },

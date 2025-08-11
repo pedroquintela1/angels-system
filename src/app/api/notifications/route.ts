@@ -68,10 +68,7 @@ export async function POST(request: NextRequest) {
     const { action, notificationId } = body;
 
     if (action === 'mark_read' && notificationId) {
-      const notification = await notificationService.markAsRead(
-        notificationId,
-        session.user.id
-      );
+      const notification = await notificationService.markAsRead(notificationId);
       
       return NextResponse.json({
         message: 'Notificação marcada como lida',
@@ -84,7 +81,7 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json({
         message: 'Todas as notificações marcadas como lidas',
-        count: result.count,
+        count: result.markedCount,
       });
     }
 

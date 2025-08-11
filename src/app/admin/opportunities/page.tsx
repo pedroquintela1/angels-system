@@ -45,12 +45,28 @@ interface Opportunity {
 }
 
 interface OpportunityStats {
-  total: number;
-  active: number;
-  funded: number;
-  totalRaised: number;
-  averageTicket: number;
-  conversionRate: number;
+  overview: {
+    totalOpportunities: number;
+    totalInvestments: number;
+    totalCapturedAmount: number;
+    totalTargetAmount: number;
+    overallCompletionRate: number;
+    averageInvestmentSize: number;
+  };
+  byStatus: {
+    DRAFT: { count: number; totalTarget: number; totalCaptured: number };
+    ACTIVE: { count: number; totalTarget: number; totalCaptured: number };
+    CLOSED: { count: number; totalTarget: number; totalCaptured: number };
+    COMPLETED: { count: number; totalTarget: number; totalCaptured: number };
+    CANCELLED: { count: number; totalTarget: number; totalCaptured: number };
+  };
+  performance: {
+    successRate: number;
+    activeRate: number;
+    cancellationRate: number;
+    averageTargetAmount: number;
+    averageCapturedAmount: number;
+  };
 }
 
 export default function OpportunitiesPage() {
@@ -144,24 +160,24 @@ export default function OpportunitiesPage() {
   });
 
   // Get status badge variant
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     const variants = {
-      draft: 'secondary',
-      active: 'default',
-      funding: 'default',
-      funded: 'default',
-      closed: 'outline',
-      cancelled: 'destructive',
+      draft: 'secondary' as const,
+      active: 'default' as const,
+      funding: 'default' as const,
+      funded: 'default' as const,
+      closed: 'outline' as const,
+      cancelled: 'destructive' as const,
     };
     return variants[status as keyof typeof variants] || 'secondary';
   };
 
   // Get risk level badge
-  const getRiskBadge = (risk: string) => {
+  const getRiskBadge = (risk: string): "default" | "secondary" | "destructive" => {
     const variants = {
-      low: 'default',
-      medium: 'secondary',
-      high: 'destructive',
+      low: 'default' as const,
+      medium: 'secondary' as const,
+      high: 'destructive' as const,
     };
     return variants[risk as keyof typeof variants] || 'secondary';
   };
@@ -175,12 +191,18 @@ export default function OpportunitiesPage() {
   };
 
   // Format percentage
-  const formatPercentage = (value: number) => {
+  const formatPercentage = (value: number | undefined | null) => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return '0.0%';
+    }
     return `${value.toFixed(1)}%`;
   };
 
   // Calculate progress
-  const calculateProgress = (current: number, target: number) => {
+  const calculateProgress = (current: number | undefined | null, target: number | undefined | null) => {
+    if (!current || !target || current === 0 || target === 0) {
+      return 0;
+    }
     return Math.min((current / target) * 100, 100);
   };
 
@@ -225,7 +247,7 @@ export default function OpportunitiesPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
+              <div className="text-2xl font-bold">{stats.overview.totalOpportunities}</div>
               <p className="text-xs text-muted-foreground">oportunidades</p>
             </CardContent>
           </Card>

@@ -86,9 +86,6 @@ export const POST = withAuth(
           );
         }
 
-        targetAgentId = assignedTo;
-      }
-
         if (!['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(agent.role)) {
           return NextResponse.json(
             { error: 'Usuário não tem permissão para ser agente de suporte' },
@@ -98,18 +95,6 @@ export const POST = withAuth(
 
         targetAgentId = assignedTo;
       }
-
-      // Buscar informações do agente
-      const agent = await prisma.user.findUnique({
-        where: { id: targetAgentId! },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          role: true,
-        },
-      });
 
       // Atualizar tickets
       const updatedTickets = await Promise.all(
@@ -128,7 +113,7 @@ export const POST = withAuth(
             await prisma.ticketMessage.create({
               data: {
                 ticketId: ticket.id,
-                message: `Ticket atribuído para ${agent.firstName} ${agent.lastName} (${assignmentMethod === 'automatic' ? 'atribuição automática' : 'atribuição manual'}) por ${user.firstName} ${user.lastName}`,
+                message: `Ticket atribuído para ${agent.firstName} ${agent.lastName} (${assignmentMethod === 'automatic' ? 'atribuição automática' : 'atribuição manual'}) por ${user.name}`,
                 isFromUser: false,
                 authorId: user.id,
               },

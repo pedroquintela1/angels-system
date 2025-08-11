@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/middleware/auth';
+import { withAuth, AuthenticatedUser } from '@/lib/middleware/auth';
 import { Resource, Action } from '@/lib/permissions';
 import { logResourceEvent, AuditEventType } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
@@ -14,9 +14,13 @@ const ActionSchema = z.object({
 
 // POST - Executar ações específicas na oportunidade
 export const POST = withAuth(
-  async (request: NextRequest, user, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, user: AuthenticatedUser) => {
     try {
-      const opportunityId = params.id;
+      // Extract ID from URL
+      const url = new URL(request.url);
+      const pathSegments = url.pathname.split('/');
+      const opportunityId = pathSegments[pathSegments.length - 2]; // -2 porque o último é 'actions'
+
       const body = await request.json();
       const { action, reason, notes } = ActionSchema.parse(body);
 

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     startDate.setDate(startDate.getDate() - period);
 
     // Get financial data
-    const investments = await prisma.investment.findMany({
+    const investments = await prisma.userInvestment.findMany({
       where: {
         createdAt: {
           gte: startDate,
@@ -59,7 +59,6 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             title: true,
-            category: true,
           },
         },
       },
@@ -69,7 +68,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get opportunities data
-    const opportunities = await prisma.opportunity.findMany({
+    const opportunities = await prisma.investmentOpportunity.findMany({
       where: {
         createdAt: {
           gte: startDate,
@@ -83,9 +82,6 @@ export async function GET(request: NextRequest) {
           },
         },
         investments: {
-          where: {
-            status: 'CONFIRMED',
-          },
           select: {
             amount: true,
           },
@@ -99,7 +95,7 @@ export async function GET(request: NextRequest) {
 
       if (reportType === 'financial' || reportType === 'investments') {
         // Investments CSV
-        csvContent = 'ID,Data,Usuário,Email,Oportunidade,Categoria,Valor,Status\n';
+        csvContent = 'ID,Data,Usuário,Email,Oportunidade,Valor\n';
         
         investments.forEach(investment => {
           const row = [
@@ -108,16 +104,14 @@ export async function GET(request: NextRequest) {
             `${investment.user.firstName} ${investment.user.lastName}`,
             investment.user.email,
             investment.opportunity?.title || 'N/A',
-            investment.opportunity?.category || 'N/A',
             investment.amount.toString(),
-            investment.status,
           ].map(field => `"${field}"`).join(',');
           
           csvContent += row + '\n';
         });
       } else if (reportType === 'opportunities') {
         // Opportunities CSV
-        csvContent = 'ID,Título,Categoria,Meta,Captado,Investidores,Status,Data Criação\n';
+        csvContent = 'ID,Título,Meta,Captado,Investidores,Status,Data Criação\n';
         
         opportunities.forEach(opportunity => {
           const totalRaised = opportunity.investments.reduce((sum, inv) => sum + inv.amount, 0);
@@ -125,7 +119,6 @@ export async function GET(request: NextRequest) {
           const row = [
             opportunity.id,
             opportunity.title,
-            opportunity.category,
             opportunity.targetAmount.toString(),
             totalRaised.toString(),
             opportunity._count.investments.toString(),
@@ -168,7 +161,6 @@ export async function GET(request: NextRequest) {
         investments: investments.map(investment => ({
           id: investment.id,
           amount: investment.amount,
-          status: investment.status,
           createdAt: investment.createdAt,
           user: {
             id: investment.user.id,
@@ -178,7 +170,6 @@ export async function GET(request: NextRequest) {
           opportunity: investment.opportunity ? {
             id: investment.opportunity.id,
             title: investment.opportunity.title,
-            category: investment.opportunity.category,
           } : null,
         })),
         opportunities: opportunities.map(opportunity => {
@@ -188,7 +179,6 @@ export async function GET(request: NextRequest) {
           return {
             id: opportunity.id,
             title: opportunity.title,
-            category: opportunity.category,
             targetAmount: opportunity.targetAmount,
             currentAmount: totalRaised,
             progress: Math.round(progress * 100) / 100,

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { KycDocumentType } from '@prisma/client';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -16,7 +17,7 @@ const ALLOWED_TYPES = [
   'application/pdf',
 ];
 
-const DOCUMENT_TYPES = [
+const DOCUMENT_TYPES: KycDocumentType[] = [
   'IDENTITY_FRONT',
   'IDENTITY_BACK',
   'CPF_DOCUMENT',
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const documentType = formData.get('documentType') as string;
+    const documentType = formData.get('documentType') as KycDocumentType;
 
     if (!file) {
       return NextResponse.json(

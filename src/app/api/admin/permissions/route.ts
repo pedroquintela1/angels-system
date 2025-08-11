@@ -80,7 +80,7 @@ export const GET = withAuth(
       
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Parâmetros inválidos', details: error.errors },
+          { error: 'Parâmetros inválidos', details: error.issues },
           { status: 400 }
         );
       }
@@ -94,6 +94,8 @@ export const GET = withAuth(
   {
     resource: Resource.SYSTEM_SETTINGS,
     action: Action.READ,
+    requireAuth: true,
+    ownershipCheck: false,
     allowedRoles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   }
 );
@@ -111,7 +113,7 @@ export const POST = withAuth(
       // Verificar se o usuário alvo existe
       const targetUser = await prisma.user.findUnique({
         where: { id: validatedData.userId },
-        select: { id: true, email: true, role: true, name: true },
+        select: { id: true, email: true, role: true, firstName: true, lastName: true },
       });
       
       if (!targetUser) {
@@ -152,7 +154,8 @@ export const POST = withAuth(
         select: {
           id: true,
           email: true,
-          name: true,
+          firstName: true,
+          lastName: true,
           role: true,
           updatedAt: true,
         },
@@ -186,7 +189,7 @@ export const POST = withAuth(
       
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Dados inválidos', details: error.errors },
+          { error: 'Dados inválidos', details: error.issues },
           { status: 400 }
         );
       }
@@ -200,6 +203,8 @@ export const POST = withAuth(
   {
     resource: Resource.USERS,
     action: Action.UPDATE,
+    requireAuth: true,
+    ownershipCheck: false,
     allowedRoles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   }
 );

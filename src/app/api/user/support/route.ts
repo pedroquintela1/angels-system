@@ -89,5 +89,7 @@ export const GET = withAuth(
   {
     resource: Resource.SUPPORT_TICKETS,
     action: Action.READ,
+    requireAuth: true,
+    ownershipCheck: false,
   }
 );
