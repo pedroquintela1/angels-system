@@ -1,37 +1,20 @@
 'use client';
 
+import {
+  TrendingUp,
+  TrendingDown,
+  Users,
+  DollarSign,
+  Target,
+  FileDown,
+  Calendar,
+  BarChart3,
+  Download,
+  Info,
+  CreditCard,
+  Percent,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  TooltipProvider,
-  MetricTooltip,
-} from '@/components/ui/tooltip';
-import { useToast } from '@/hooks/use-toast';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
   AreaChart,
   Area,
@@ -49,20 +32,35 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
-  TrendingUp,
-  TrendingDown,
-  Users,
-  DollarSign,
-  Target,
-  FileDown,
-  Calendar,
-  BarChart3,
-  Download,
-  Info,
-  CreditCard,
-  Percent,
-} from 'lucide-react';
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TooltipProvider, MetricTooltip } from '@/components/ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
 
 // Tipos de dados
 interface AnalyticsMetrics {
