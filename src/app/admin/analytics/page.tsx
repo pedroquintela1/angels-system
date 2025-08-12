@@ -33,7 +33,6 @@ import {
   TooltipTrigger,
   MetricTooltip,
 } from '@/components/ui/tooltip';
-import { MiniChart, getExampleChartData } from '@/components/ui/mini-chart';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
@@ -62,7 +61,6 @@ import {
   FileDown,
   Calendar,
   BarChart3,
-  PieChart as PieChartIcon,
   Download,
   Info,
   CreditCard,
@@ -121,7 +119,6 @@ export default function AnalyticsPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('30');
-  const [selectedMetric, setSelectedMetric] = useState('revenue');
   const [exportingReport, setExportingReport] = useState(false);
 
   // Estados dos dados
