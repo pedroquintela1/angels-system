@@ -27,10 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Tooltip as InfoTooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
   MetricTooltip,
 } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
