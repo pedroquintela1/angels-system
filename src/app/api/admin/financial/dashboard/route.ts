@@ -8,10 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
     // Check if user is admin
@@ -21,10 +18,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -90,8 +84,10 @@ export async function GET(request: NextRequest) {
 
     // Calculate commissions (assuming 5% commission rate)
     const commissionRate = 0.05;
-    const totalCommissions = (totalInvestments._sum.amount || 0) * commissionRate;
-    const monthlyCommissions = (monthlyInvestments._sum.amount || 0) * commissionRate;
+    const totalCommissions =
+      (totalInvestments._sum.amount || 0) * commissionRate;
+    const monthlyCommissions =
+      (monthlyInvestments._sum.amount || 0) * commissionRate;
 
     // Get active investors count
     const activeInvestors = await prisma.user.count({
@@ -112,21 +108,63 @@ export async function GET(request: NextRequest) {
     // Calculate growth rates
     const currentAmount = currentPeriodInvestments._sum.amount || 0;
     const previousAmount = previousPeriodInvestments._sum.amount || 0;
-    
-    const investmentGrowth = previousAmount > 0 
-      ? ((currentAmount - previousAmount) / previousAmount) * 100 
-      : 0;
 
-    // Revenue is total investments + commissions
-    const totalRevenue = (totalInvestments._sum.amount || 0) + totalCommissions;
-    const monthlyRevenue = (monthlyInvestments._sum.amount || 0) + monthlyCommissions;
-    
-    const currentRevenue = currentAmount + (currentAmount * commissionRate);
-    const previousRevenue = previousAmount + (previousAmount * commissionRate);
-    
-    const revenueGrowth = previousRevenue > 0 
-      ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 
-      : 0;
+    const investmentGrowth =
+      previousAmount > 0
+        ? ((currentAmount - previousAmount) / previousAmount) * 100
+        : 0;
+
+    // Get total monthly fees from all completed membership payments
+    const totalMonthlyFeesResult = await prisma.transaction.aggregate({
+      where: {
+        type: 'MEMBERSHIP_PAYMENT',
+        status: 'COMPLETED',
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    // Get current month's monthly fees
+    const currentMonthStart = new Date();
+    currentMonthStart.setDate(1);
+    currentMonthStart.setHours(0, 0, 0, 0);
+    const nextMonth = new Date(currentMonthStart);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    const currentMonthFeesResult = await prisma.transaction.aggregate({
+      where: {
+        type: 'MEMBERSHIP_PAYMENT',
+        status: 'COMPLETED',
+        createdAt: {
+          gte: currentMonthStart,
+          lt: nextMonth,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const totalMonthlyFees = totalMonthlyFeesResult._sum.amount || 0;
+    const currentMonthFees = currentMonthFeesResult._sum.amount || 0;
+
+    // Revenue is total investments + commissions + monthly fees
+    const totalRevenue =
+      (totalInvestments._sum.amount || 0) + totalCommissions + totalMonthlyFees;
+    const monthlyRevenue =
+      (monthlyInvestments._sum.amount || 0) +
+      monthlyCommissions +
+      currentMonthFees;
+
+    const currentRevenue =
+      currentAmount + currentAmount * commissionRate + currentMonthFees;
+    const previousRevenue = previousAmount + previousAmount * commissionRate;
+
+    const revenueGrowth =
+      previousRevenue > 0
+        ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
+        : 0;
 
     // Get revenue data for chart (last 12 months)
     const revenueData = [];
@@ -153,13 +191,35 @@ export async function GET(request: NextRequest) {
 
       const investments = monthInvestments._sum.amount || 0;
       const commissions = investments * commissionRate;
-      const revenue = investments + commissions;
+
+      // Get monthly fees from membership payments
+      const monthlyFeesResult = await prisma.transaction.aggregate({
+        where: {
+          type: 'MEMBERSHIP_PAYMENT',
+          status: 'COMPLETED',
+          createdAt: {
+            gte: monthStart,
+            lt: monthEnd,
+          },
+        },
+        _sum: {
+          amount: true,
+        },
+      });
+
+      const monthlyFees = monthlyFeesResult._sum.amount || 0;
+
+      const revenue = investments + commissions + monthlyFees;
 
       revenueData.push({
-        month: monthStart.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
+        month: monthStart.toLocaleDateString('pt-BR', {
+          month: 'short',
+          year: 'numeric',
+        }),
         revenue,
         investments,
         commissions,
+        monthlyFees,
       });
     }
 
@@ -170,6 +230,8 @@ export async function GET(request: NextRequest) {
       monthlyInvestments: monthlyInvestments._sum.amount || 0,
       totalCommissions,
       monthlyCommissions,
+      totalMonthlyFees,
+      currentMonthFees,
       activeInvestors,
       pendingTransactions,
       revenueGrowth,
@@ -180,7 +242,6 @@ export async function GET(request: NextRequest) {
       metrics,
       revenueData,
     });
-
   } catch (error) {
     console.error('Financial dashboard API error:', error);
     return NextResponse.json(

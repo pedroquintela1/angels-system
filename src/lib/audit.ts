@@ -8,49 +8,49 @@ export enum AuditEventType {
   LOGIN_FAILED = 'LOGIN_FAILED',
   LOGOUT = 'LOGOUT',
   PASSWORD_CHANGE = 'PASSWORD_CHANGE',
-  
+
   // Autorização
   ACCESS_GRANTED = 'ACCESS_GRANTED',
   ACCESS_DENIED = 'ACCESS_DENIED',
   PERMISSION_CHANGE = 'PERMISSION_CHANGE',
   ROLE_CHANGE = 'ROLE_CHANGE',
-  
+
   // Operações CRUD
   RESOURCE_CREATE = 'RESOURCE_CREATE',
   RESOURCE_READ = 'RESOURCE_READ',
   RESOURCE_UPDATE = 'RESOURCE_UPDATE',
   RESOURCE_DELETE = 'RESOURCE_DELETE',
-  
+
   // Operações financeiras
   INVESTMENT_CREATE = 'INVESTMENT_CREATE',
   INVESTMENT_UPDATE = 'INVESTMENT_UPDATE',
   PAYMENT_PROCESS = 'PAYMENT_PROCESS',
   TRANSACTION_CREATE = 'TRANSACTION_CREATE',
-  
+
   // Operações administrativas
   USER_CREATE = 'USER_CREATE',
   USER_UPDATE = 'USER_UPDATE',
   USER_DELETE = 'USER_DELETE',
   USER_ACTIVATE = 'USER_ACTIVATE',
   USER_DEACTIVATE = 'USER_DEACTIVATE',
-  
+
   // KYC
   KYC_SUBMIT = 'KYC_SUBMIT',
   KYC_APPROVE = 'KYC_APPROVE',
   KYC_REJECT = 'KYC_REJECT',
-  
+
   // Oportunidades
   OPPORTUNITY_CREATE = 'OPPORTUNITY_CREATE',
   OPPORTUNITY_UPDATE = 'OPPORTUNITY_UPDATE',
   OPPORTUNITY_DELETE = 'OPPORTUNITY_DELETE',
   OPPORTUNITY_APPROVE = 'OPPORTUNITY_APPROVE',
   OPPORTUNITY_REJECT = 'OPPORTUNITY_REJECT',
-  
+
   // Sistema
   SYSTEM_CONFIG_CHANGE = 'SYSTEM_CONFIG_CHANGE',
   DATA_EXPORT = 'DATA_EXPORT',
   BULK_OPERATION = 'BULK_OPERATION',
-  
+
   // Segurança
   SUSPICIOUS_ACTIVITY = 'SUSPICIOUS_ACTIVITY',
   SECURITY_VIOLATION = 'SECURITY_VIOLATION',
@@ -69,20 +69,22 @@ export enum AuditSeverity {
 export const AuditEventSchema = z.object({
   eventType: z.nativeEnum(AuditEventType),
   severity: z.nativeEnum(AuditSeverity).default(AuditSeverity.MEDIUM),
-  userId: z.string().uuid().optional(),
+  userId: z.string().optional(), // Changed from .uuid() to accept any string format (UUID, CUID, etc.)
   userEmail: z.string().email().optional(),
   userRole: z.nativeEnum(UserRole).optional(),
   resource: z.nativeEnum(Resource).optional(),
   action: z.nativeEnum(Action).optional(),
   resourceId: z.string().optional(),
   details: z.record(z.string(), z.any()).optional(),
-  metadata: z.object({
-    ip: z.string().optional(),
-    userAgent: z.string().optional(),
-    sessionId: z.string().optional(),
-    requestId: z.string().optional(),
-    timestamp: z.date().default(() => new Date()),
-  }).optional(),
+  metadata: z
+    .object({
+      ip: z.string().optional(),
+      userAgent: z.string().optional(),
+      sessionId: z.string().optional(),
+      requestId: z.string().optional(),
+      timestamp: z.date().default(() => new Date()),
+    })
+    .optional(),
   success: z.boolean().default(true),
   errorMessage: z.string().optional(),
 });
@@ -112,7 +114,7 @@ export interface AuditQueryFilters {
 // Implementação do logger de auditoria
 class AuditLoggerImpl implements AuditLogger {
   private logs: AuditEvent[] = []; // Em produção, usar banco de dados
-  
+
   async log(event: AuditEvent): Promise<void> {
     try {
       // Validar evento com try/catch para evitar erros do Zod
@@ -126,7 +128,10 @@ class AuditLoggerImpl implements AuditLogger {
 
         validatedEvent = AuditEventSchema.parse(event);
       } catch (zodError) {
-        console.warn('Erro na validação Zod, usando evento sem validação:', zodError);
+        console.warn(
+          'Erro na validação Zod, usando evento sem validação:',
+          zodError
+        );
         // Usar evento sem validação como fallback
         validatedEvent = {
           ...event,
@@ -149,7 +154,7 @@ class AuditLoggerImpl implements AuditLogger {
         ...validatedEvent.metadata,
         timestamp: new Date(),
       };
-      
+
       // Em desenvolvimento, apenas log no console
       if (process.env.NODE_ENV === 'development') {
         console.log('🔍 AUDIT LOG:', {
@@ -163,10 +168,10 @@ class AuditLoggerImpl implements AuditLogger {
           details: validatedEvent.details,
         });
       }
-      
+
       // Armazenar em memória (temporário)
       this.logs.push(validatedEvent);
-      
+
       // TODO: Em produção, salvar no banco de dados
       // await prisma.auditLog.create({
       //   data: {
@@ -185,71 +190,81 @@ class AuditLoggerImpl implements AuditLogger {
       //     timestamp: validatedEvent.metadata.timestamp,
       //   },
       // });
-      
+
       // Alertas para eventos críticos
       if (validatedEvent.severity === AuditSeverity.CRITICAL) {
         await this.sendCriticalAlert(validatedEvent);
       }
-      
     } catch (error) {
       console.error('Failed to log audit event:', error);
       // Não falhar a operação principal por causa de erro de auditoria
     }
   }
-  
+
   async query(filters: AuditQueryFilters): Promise<AuditEvent[]> {
     // Em produção, usar query no banco de dados
     let filteredLogs = [...this.logs];
-    
+
     if (filters.startDate) {
-      filteredLogs = filteredLogs.filter(log => 
-        log.metadata?.timestamp && log.metadata.timestamp >= filters.startDate!
+      filteredLogs = filteredLogs.filter(
+        log =>
+          log.metadata?.timestamp &&
+          log.metadata.timestamp >= filters.startDate!
       );
     }
-    
+
     if (filters.endDate) {
-      filteredLogs = filteredLogs.filter(log => 
-        log.metadata?.timestamp && log.metadata.timestamp <= filters.endDate!
+      filteredLogs = filteredLogs.filter(
+        log =>
+          log.metadata?.timestamp && log.metadata.timestamp <= filters.endDate!
       );
     }
-    
+
     if (filters.userId) {
       filteredLogs = filteredLogs.filter(log => log.userId === filters.userId);
     }
-    
+
     if (filters.eventType) {
-      filteredLogs = filteredLogs.filter(log => log.eventType === filters.eventType);
+      filteredLogs = filteredLogs.filter(
+        log => log.eventType === filters.eventType
+      );
     }
-    
+
     if (filters.severity) {
-      filteredLogs = filteredLogs.filter(log => log.severity === filters.severity);
+      filteredLogs = filteredLogs.filter(
+        log => log.severity === filters.severity
+      );
     }
-    
+
     if (filters.resource) {
-      filteredLogs = filteredLogs.filter(log => log.resource === filters.resource);
+      filteredLogs = filteredLogs.filter(
+        log => log.resource === filters.resource
+      );
     }
-    
+
     if (filters.success !== undefined) {
-      filteredLogs = filteredLogs.filter(log => log.success === filters.success);
+      filteredLogs = filteredLogs.filter(
+        log => log.success === filters.success
+      );
     }
-    
+
     // Ordenar por timestamp (mais recente primeiro)
     filteredLogs.sort((a, b) => {
       const timeA = a.metadata?.timestamp?.getTime() || 0;
       const timeB = b.metadata?.timestamp?.getTime() || 0;
       return timeB - timeA;
     });
-    
+
     // Aplicar paginação
     const offset = filters.offset || 0;
     const limit = filters.limit || 100;
-    
+
     return filteredLogs.slice(offset, offset + limit);
   }
-  
+
   async export(filters: AuditQueryFilters): Promise<string> {
     const logs = await this.query(filters);
-    
+
     // Converter para CSV
     const headers = [
       'Timestamp',
@@ -263,7 +278,7 @@ class AuditLoggerImpl implements AuditLogger {
       'IP Address',
       'Details',
     ];
-    
+
     const rows = logs.map(log => [
       log.metadata?.timestamp?.toISOString() || '',
       log.eventType,
@@ -276,15 +291,15 @@ class AuditLoggerImpl implements AuditLogger {
       log.metadata?.ip || '',
       JSON.stringify(log.details || {}),
     ]);
-    
+
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
     ].join('\n');
-    
+
     return csvContent;
   }
-  
+
   private async sendCriticalAlert(event: AuditEvent): Promise<void> {
     // TODO: Implementar alertas críticos (email, Slack, etc.)
     console.error('🚨 CRITICAL SECURITY EVENT:', {
@@ -315,7 +330,9 @@ export async function logAuthEvent(
     userEmail,
     success,
     details,
-    metadata: metadata ? { ...metadata, timestamp: new Date() } : { timestamp: new Date() },
+    metadata: metadata
+      ? { ...metadata, timestamp: new Date() }
+      : { timestamp: new Date() },
   });
 }
 
@@ -332,7 +349,7 @@ export async function logResourceEvent(
   metadata?: { ip?: string; userAgent?: string }
 ): Promise<void> {
   const severity = getSeverityForResourceAction(resource, action);
-  
+
   await auditLogger.log({
     eventType,
     severity,
@@ -344,7 +361,9 @@ export async function logResourceEvent(
     resourceId,
     success,
     details,
-    metadata: metadata ? { ...metadata, timestamp: new Date() } : { timestamp: new Date() },
+    metadata: metadata
+      ? { ...metadata, timestamp: new Date() }
+      : { timestamp: new Date() },
   });
 }
 
@@ -363,12 +382,17 @@ export async function logSecurityEvent(
     userEmail,
     success: false,
     details,
-    metadata: metadata ? { ...metadata, timestamp: new Date() } : { timestamp: new Date() },
+    metadata: metadata
+      ? { ...metadata, timestamp: new Date() }
+      : { timestamp: new Date() },
   });
 }
 
 // Determinar severidade baseada no recurso e ação
-function getSeverityForResourceAction(resource: Resource, action: Action): AuditSeverity {
+function getSeverityForResourceAction(
+  resource: Resource,
+  action: Action
+): AuditSeverity {
   // Recursos críticos
   const criticalResources = [
     Resource.USERS,
@@ -376,21 +400,27 @@ function getSeverityForResourceAction(resource: Resource, action: Action): Audit
     Resource.PAYMENTS,
     Resource.SYSTEM_SETTINGS,
   ];
-  
+
   // Ações críticas
   const criticalActions = [Action.DELETE, Action.APPROVE, Action.REJECT];
-  
-  if (criticalResources.includes(resource) && criticalActions.includes(action)) {
+
+  if (
+    criticalResources.includes(resource) &&
+    criticalActions.includes(action)
+  ) {
     return AuditSeverity.CRITICAL;
   }
-  
-  if (criticalResources.includes(resource) || criticalActions.includes(action)) {
+
+  if (
+    criticalResources.includes(resource) ||
+    criticalActions.includes(action)
+  ) {
     return AuditSeverity.HIGH;
   }
-  
+
   if (action === Action.CREATE || action === Action.UPDATE) {
     return AuditSeverity.MEDIUM;
   }
-  
+
   return AuditSeverity.LOW;
 }

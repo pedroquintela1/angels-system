@@ -2,12 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, CheckCircle, XCircle, DollarSign, Users, Calendar, FileText, TrendingUp, AlertTriangle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Edit,
+  CheckCircle,
+  XCircle,
+  DollarSign,
+  Users,
+  Calendar,
+  FileText,
+  TrendingUp,
+  AlertTriangle,
+} from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -27,24 +44,30 @@ interface Opportunity {
   targetAmount: number;
   currentAmount: number;
   minInvestment: number;
-  expectedReturn: number;
-  deadline: string;
+  expectedReturn?: number;
+  deadline?: string | null;
   status: string;
-  category: string;
-  riskLevel: string;
-  investorCount: number;
+  category?: string;
+  riskLevel?: string;
+  investorCount?: number;
   documents: any[];
   investments: Investment[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 interface Investment {
   id: string;
   amount: number;
-  status: string;
-  createdAt: string;
-  user: {
+  status?: string;
+  investedAt: string | null;
+  createdAt?: string;
+  investor?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  user?: {
     id: string;
     firstName: string;
     lastName: string;
@@ -62,7 +85,7 @@ export default function OpportunityDetailsPage() {
     try {
       setLoading(true);
       const response = await fetch(`/api/admin/opportunities/${params.id}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setOpportunity(data.opportunity);
@@ -121,15 +144,91 @@ export default function OpportunityDetailsPage() {
     }).format(amount);
   };
 
-  const formatPercentage = (value: number) => {
+  const formatPercentage = (value: number | undefined) => {
+    if (value === undefined || value === null) return 'N/A';
     return `${value.toFixed(1)}%`;
+  };
+
+  const formatDate = (date: string | null | undefined) => {
+    if (!date) return 'Data não disponível';
+    try {
+      return new Date(date).toLocaleDateString('pt-BR');
+    } catch {
+      return 'Data inválida';
+    }
   };
 
   const calculateProgress = (current: number, target: number) => {
     return Math.min((current / target) * 100, 100);
   };
 
-  const getStatusBadge = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const translateCategory = (category: string | undefined) => {
+    if (!category) return 'Não especificada';
+    const translations = {
+      real_estate: 'Imóveis',
+      technology: 'Tecnologia',
+      retail: 'Varejo',
+      healthcare: 'Saúde',
+      agriculture: 'Agricultura',
+      energy: 'Energia',
+      finance: 'Finanças',
+      education: 'Educação',
+      entertainment: 'Entretenimento',
+      logistics: 'Logística',
+    };
+    return (
+      translations[category as keyof typeof translations] ||
+      category.replace('_', ' ')
+    );
+  };
+
+  const translateStatus = (status: string) => {
+    const translations = {
+      draft: 'Rascunho',
+      active: 'Ativa',
+      funding: 'Captando',
+      funded: 'Financiada',
+      closed: 'Fechada',
+      cancelled: 'Cancelada',
+      DRAFT: 'Rascunho',
+      ACTIVE: 'Ativa',
+      FUNDING: 'Captando',
+      FUNDED: 'Financiada',
+      CLOSED: 'Fechada',
+      CANCELLED: 'Cancelada',
+    };
+    return translations[status as keyof typeof translations] || status;
+  };
+
+  const translateRisk = (risk: string | undefined) => {
+    if (!risk) return 'Não especificado';
+    const translations = {
+      low: 'Baixo',
+      medium: 'Médio',
+      high: 'Alto',
+      LOW: 'Baixo',
+      MEDIUM: 'Médio',
+      HIGH: 'Alto',
+    };
+    return translations[risk as keyof typeof translations] || risk;
+  };
+
+  const translateInvestmentStatus = (status: string | undefined) => {
+    if (!status) return 'Pendente';
+    const translations = {
+      confirmed: 'Confirmado',
+      pending: 'Pendente',
+      cancelled: 'Cancelado',
+      CONFIRMED: 'Confirmado',
+      PENDING: 'Pendente',
+      CANCELLED: 'Cancelado',
+    };
+    return translations[status as keyof typeof translations] || status;
+  };
+
+  const getStatusBadge = (
+    status: string
+  ): 'default' | 'secondary' | 'destructive' | 'outline' => {
     const variants = {
       draft: 'secondary' as const,
       active: 'default' as const,
@@ -137,15 +236,27 @@ export default function OpportunityDetailsPage() {
       funded: 'default' as const,
       closed: 'outline' as const,
       cancelled: 'destructive' as const,
+      DRAFT: 'secondary' as const,
+      ACTIVE: 'default' as const,
+      FUNDING: 'default' as const,
+      FUNDED: 'default' as const,
+      CLOSED: 'outline' as const,
+      CANCELLED: 'destructive' as const,
     };
     return variants[status as keyof typeof variants] || 'secondary';
   };
 
-  const getRiskBadge = (risk: string): "default" | "secondary" | "destructive" => {
+  const getRiskBadge = (
+    risk: string | undefined
+  ): 'default' | 'secondary' | 'destructive' => {
+    if (!risk) return 'secondary';
     const variants = {
       low: 'default' as const,
       medium: 'secondary' as const,
       high: 'destructive' as const,
+      LOW: 'default' as const,
+      MEDIUM: 'secondary' as const,
+      HIGH: 'destructive' as const,
     };
     return variants[risk as keyof typeof variants] || 'secondary';
   };
@@ -175,7 +286,10 @@ export default function OpportunityDetailsPage() {
     );
   }
 
-  const progress = calculateProgress(opportunity.currentAmount, opportunity.targetAmount);
+  const progress = calculateProgress(
+    opportunity.currentAmount,
+    opportunity.targetAmount
+  );
 
   return (
     <div className="space-y-6">
@@ -188,13 +302,17 @@ export default function OpportunityDetailsPage() {
               Voltar
             </Button>
           </Link>
-          
+
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{opportunity.title}</h1>
-            <p className="text-gray-600">Detalhes da oportunidade de investimento</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {opportunity.title}
+            </h1>
+            <p className="text-gray-600">
+              Detalhes da oportunidade de investimento
+            </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {opportunity.status === 'draft' && (
             <>
@@ -208,14 +326,14 @@ export default function OpportunityDetailsPage() {
               </Button>
             </>
           )}
-          
+
           {opportunity.status === 'active' && (
             <Button variant="outline" onClick={() => handleAction('close')}>
               <XCircle className="h-4 w-4 mr-2" />
               Fechar Captação
             </Button>
           )}
-          
+
           <Link href={`/admin/opportunities/${opportunity.id}/edit`}>
             <Button>
               <Edit className="h-4 w-4 mr-2" />
@@ -231,17 +349,17 @@ export default function OpportunityDetailsPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Status</CardTitle>
             <Badge variant={getStatusBadge(opportunity.status)}>
-              {opportunity.status}
+              {translateStatus(opportunity.status)}
             </Badge>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               <Badge variant={getRiskBadge(opportunity.riskLevel)}>
-                Risco {opportunity.riskLevel}
+                Risco {translateRisk(opportunity.riskLevel)}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Categoria: {opportunity.category.replace('_', ' ')}
+              Categoria: {translateCategory(opportunity.category)}
             </p>
           </CardContent>
         </Card>
@@ -252,9 +370,12 @@ export default function OpportunityDetailsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(opportunity.currentAmount)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(opportunity.currentAmount)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              de {formatCurrency(opportunity.targetAmount)} ({formatPercentage(progress)})
+              de {formatCurrency(opportunity.targetAmount)} (
+              {formatPercentage(progress)})
             </p>
             <Progress value={progress} className="mt-2" />
           </CardContent>
@@ -266,7 +387,9 @@ export default function OpportunityDetailsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{opportunity.investorCount}</div>
+            <div className="text-2xl font-bold">
+              {opportunity.investorCount}
+            </div>
             <p className="text-xs text-muted-foreground">
               Mín: {formatCurrency(opportunity.minInvestment)}
             </p>
@@ -279,9 +402,11 @@ export default function OpportunityDetailsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatPercentage(opportunity.expectedReturn)}</div>
+            <div className="text-2xl font-bold">
+              {formatPercentage(opportunity.expectedReturn)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Prazo: {new Date(opportunity.deadline).toLocaleDateString('pt-BR')}
+              Prazo: {formatDate(opportunity.deadline)}
             </p>
           </CardContent>
         </Card>
@@ -291,8 +416,12 @@ export default function OpportunityDetailsPage() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="investments">Investimentos ({opportunity.investments?.length || 0})</TabsTrigger>
-          <TabsTrigger value="documents">Documentos ({opportunity.documents?.length || 0})</TabsTrigger>
+          <TabsTrigger value="investments">
+            Investimentos ({opportunity.investments?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="documents">
+            Documentos ({opportunity.documents?.length || 0})
+          </TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
@@ -302,7 +431,9 @@ export default function OpportunityDetailsPage() {
               <CardTitle>Descrição</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 whitespace-pre-wrap">{opportunity.description}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">
+                {opportunity.description}
+              </p>
             </CardContent>
           </Card>
 
@@ -314,19 +445,27 @@ export default function OpportunityDetailsPage() {
               <CardContent className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Meta de Captação:</span>
-                  <span className="font-medium">{formatCurrency(opportunity.targetAmount)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(opportunity.targetAmount)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Valor Captado:</span>
-                  <span className="font-medium">{formatCurrency(opportunity.currentAmount)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(opportunity.currentAmount)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Investimento Mínimo:</span>
-                  <span className="font-medium">{formatCurrency(opportunity.minInvestment)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(opportunity.minInvestment)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Retorno Esperado:</span>
-                  <span className="font-medium">{formatPercentage(opportunity.expectedReturn)}</span>
+                  <span className="font-medium">
+                    {formatPercentage(opportunity.expectedReturn)}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -338,21 +477,33 @@ export default function OpportunityDetailsPage() {
               <CardContent className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Categoria:</span>
-                  <span className="font-medium capitalize">{opportunity.category.replace('_', ' ')}</span>
+                  <span className="font-medium capitalize">
+                    {translateCategory(opportunity.category)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Nível de Risco:</span>
                   <Badge variant={getRiskBadge(opportunity.riskLevel)}>
-                    {opportunity.riskLevel}
+                    {translateRisk(opportunity.riskLevel)}
                   </Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Prazo:</span>
-                  <span className="font-medium">{new Date(opportunity.deadline).toLocaleDateString('pt-BR')}</span>
+                  <span className="font-medium">
+                    {formatDate(opportunity.deadline)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Criado em:</span>
-                  <span className="font-medium">{new Date(opportunity.createdAt).toLocaleDateString('pt-BR')}</span>
+                  <span className="font-medium">
+                    {formatDate(opportunity.createdAt)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Atualizado em:</span>
+                  <span className="font-medium">
+                    {formatDate(opportunity.updatedAt)}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -380,20 +531,39 @@ export default function OpportunityDetailsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {opportunity.investments.map((investment) => (
+                    {opportunity.investments.map(investment => (
                       <TableRow key={investment.id}>
                         <TableCell>
-                          {investment.user.firstName} {investment.user.lastName}
+                          {investment.investor?.name ||
+                            (investment.user
+                              ? `${investment.user.firstName} ${investment.user.lastName}`
+                              : 'N/A')}
                         </TableCell>
-                        <TableCell>{investment.user.email}</TableCell>
-                        <TableCell>{formatCurrency(investment.amount)}</TableCell>
                         <TableCell>
-                          <Badge variant={investment.status === 'confirmed' ? 'default' : 'secondary'}>
-                            {investment.status}
+                          {investment.investor?.email ||
+                            investment.user?.email ||
+                            'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {formatCurrency(investment.amount)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              investment.status === 'confirmed'
+                                ? 'default'
+                                : 'secondary'
+                            }
+                          >
+                            {translateInvestmentStatus(investment.status)}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {new Date(investment.createdAt).toLocaleDateString('pt-BR')}
+                          {investment.investedAt
+                            ? new Date(
+                                investment.investedAt
+                              ).toLocaleDateString('pt-BR')
+                            : 'Data não disponível'}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -401,7 +571,13 @@ export default function OpportunityDetailsPage() {
                 </Table>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Nenhum investimento realizado ainda</p>
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-2">
+                    Nenhum investimento realizado ainda
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    Os investimentos aparecerão aqui quando confirmados
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -420,7 +596,10 @@ export default function OpportunityDetailsPage() {
               {opportunity.documents && opportunity.documents.length > 0 ? (
                 <div className="space-y-2">
                   {opportunity.documents.map((doc, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-gray-500" />
                         <div>
@@ -428,7 +607,11 @@ export default function OpportunityDetailsPage() {
                           <p className="text-sm text-gray-500">{doc.type}</p>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(doc.url, '_blank')}
+                      >
                         Visualizar
                       </Button>
                     </div>
@@ -436,7 +619,9 @@ export default function OpportunityDetailsPage() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Nenhum documento anexado</p>
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">Nenhum documento anexado</p>
+                  <Button variant="outline">Adicionar Documento</Button>
                 </div>
               )}
             </CardContent>
@@ -452,20 +637,22 @@ export default function OpportunityDetailsPage() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Taxa de Conversão:</span>
-                  <span className="font-medium">12.5%</span>
+                  <span className="font-medium">12,5%</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Ticket Médio:</span>
                   <span className="font-medium">
-                    {opportunity.investorCount > 0 
-                      ? formatCurrency(opportunity.currentAmount / opportunity.investorCount)
-                      : formatCurrency(0)
-                    }
+                    {(opportunity.investorCount || 0) > 0
+                      ? formatCurrency(
+                          opportunity.currentAmount /
+                            (opportunity.investorCount || 1)
+                        )
+                      : formatCurrency(0)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Tempo Médio de Decisão:</span>
-                  <span className="font-medium">3.2 dias</span>
+                  <span className="font-medium">3,2 dias</span>
                 </div>
               </CardContent>
             </Card>
@@ -479,31 +666,40 @@ export default function OpportunityDetailsPage() {
                   <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <AlertTriangle className="h-5 w-5 text-yellow-600" />
                     <div>
-                      <p className="font-medium text-yellow-800">Captação Baixa</p>
+                      <p className="font-medium text-yellow-800">
+                        Captação Baixa
+                      </p>
                       <p className="text-sm text-yellow-600">
                         Apenas {formatPercentage(progress)} da meta atingida
                       </p>
                     </div>
                   </div>
                 )}
-                
-                {new Date(opportunity.deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <AlertTriangle className="h-5 w-5 text-red-600" />
-                    <div>
-                      <p className="font-medium text-red-800">Prazo Próximo</p>
-                      <p className="text-sm text-red-600">
-                        Prazo expira em menos de 7 dias
-                      </p>
+
+                {opportunity.deadline &&
+                  new Date(opportunity.deadline) <
+                    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <div>
+                        <p className="font-medium text-red-800">
+                          Prazo Próximo
+                        </p>
+                        <p className="text-sm text-red-600">
+                          Prazo expira em menos de 7 dias
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                
-                {progress >= 50 && new Date(opportunity.deadline) >= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && (
-                  <div className="text-center py-4">
-                    <p className="text-gray-500">Nenhum alerta no momento</p>
-                  </div>
-                )}
+                  )}
+
+                {progress >= 50 &&
+                  opportunity.deadline &&
+                  new Date(opportunity.deadline) >=
+                    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && (
+                    <div className="text-center py-4">
+                      <p className="text-gray-500">Nenhum alerta no momento</p>
+                    </div>
+                  )}
               </CardContent>
             </Card>
           </div>

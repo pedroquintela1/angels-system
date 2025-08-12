@@ -1,4 +1,14 @@
-import { PrismaClient, UserRole, KycStatus, MembershipStatus, InvestmentStatus, TransactionType, TransactionStatus, TicketStatus, TicketPriority } from '@prisma/client';
+import {
+  PrismaClient,
+  UserRole,
+  KycStatus,
+  MembershipStatus,
+  InvestmentStatus,
+  TransactionType,
+  TransactionStatus,
+  TicketStatus,
+  TicketPriority,
+} from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -176,7 +186,7 @@ async function main() {
       data: {
         userId: membership.userId,
         status: membership.status,
-        monthlyFee: 20.00,
+        monthlyFee: 20.0,
         currentPeriodStart: currentDate,
         currentPeriodEnd: nextMonth,
         nextPaymentDate: nextMonth,
@@ -190,7 +200,8 @@ async function main() {
   const opportunity1 = await prisma.investmentOpportunity.create({
     data: {
       title: 'Shopping Center São Paulo',
-      description: 'Oportunidade de investimento em shopping center na região central de São Paulo. Projeto com alta rentabilidade e baixo risco.',
+      description:
+        'Oportunidade de investimento em shopping center na região central de São Paulo. Projeto com alta rentabilidade e baixo risco.',
       targetAmount: 500000,
       currentAmount: 350000,
       minInvestment: 1000,
@@ -198,13 +209,15 @@ async function main() {
       startDate: new Date('2025-01-01'),
       endDate: new Date('2025-09-30'),
       status: InvestmentStatus.ACTIVE,
+      expectedReturn: 12.5,
     },
   });
 
   const opportunity2 = await prisma.investmentOpportunity.create({
     data: {
       title: 'Desenvolvimento Residencial RJ',
-      description: 'Projeto residencial de alto padrão no Rio de Janeiro. Localização privilegiada com vista para o mar.',
+      description:
+        'Projeto residencial de alto padrão no Rio de Janeiro. Localização privilegiada com vista para o mar.',
       targetAmount: 300000,
       currentAmount: 300000,
       minInvestment: 500,
@@ -212,13 +225,15 @@ async function main() {
       startDate: new Date('2024-06-01'),
       endDate: new Date('2024-12-31'),
       status: InvestmentStatus.COMPLETED,
+      expectedReturn: 15.8,
     },
   });
 
   const opportunity3 = await prisma.investmentOpportunity.create({
     data: {
       title: 'Centro Comercial Campinas',
-      description: 'Investimento em centro comercial estrategicamente localizado em Campinas, com grande potencial de valorização.',
+      description:
+        'Investimento em centro comercial estrategicamente localizado em Campinas, com grande potencial de valorização.',
       targetAmount: 750000,
       currentAmount: 125000,
       minInvestment: 2000,
@@ -226,6 +241,7 @@ async function main() {
       startDate: new Date('2025-02-01'),
       endDate: new Date('2025-11-30'),
       status: InvestmentStatus.ACTIVE,
+      expectedReturn: 18.3,
     },
   });
 
@@ -271,7 +287,7 @@ async function main() {
     data: {
       opportunityId: opportunity2.id,
       investmentId: (await prisma.userInvestment.findFirst({
-        where: { userId: user1.id, opportunityId: opportunity2.id }
+        where: { userId: user1.id, opportunityId: opportunity2.id },
       }))!.id,
       totalSaleAmount: 360000,
       platformFee: 18000,
@@ -333,7 +349,8 @@ async function main() {
     data: {
       userId: user1.id,
       subject: 'Problema com pagamento',
-      description: 'Não consegui efetuar o pagamento da mensalidade. O cartão foi recusado.',
+      description:
+        'Não consegui efetuar o pagamento da mensalidade. O cartão foi recusado.',
       status: TicketStatus.OPEN,
       priority: TicketPriority.HIGH,
     },
@@ -343,7 +360,8 @@ async function main() {
     data: {
       userId: user2.id,
       subject: 'Dúvida sobre investimento',
-      description: 'Gostaria de saber mais detalhes sobre a oportunidade do Shopping Center.',
+      description:
+        'Gostaria de saber mais detalhes sobre a oportunidade do Shopping Center.',
       status: TicketStatus.IN_PROGRESS,
       priority: TicketPriority.MEDIUM,
       assignedTo: support.id,
@@ -404,7 +422,8 @@ async function main() {
     {
       userId: user1.id,
       title: 'Novo retorno disponível',
-      message: 'Você recebeu R$ 1.400,00 de retorno do investimento Residencial RJ.',
+      message:
+        'Você recebeu R$ 1.400,00 de retorno do investimento Residencial RJ.',
       type: 'return',
     },
     {
@@ -422,7 +441,8 @@ async function main() {
     {
       userId: user3.id,
       title: 'Documentos pendentes',
-      message: 'Você ainda precisa enviar seus documentos para verificação KYC.',
+      message:
+        'Você ainda precisa enviar seus documentos para verificação KYC.',
       type: 'kyc',
     },
   ];
@@ -436,7 +456,9 @@ async function main() {
   console.log('✅ Seed concluído com sucesso!');
   console.log('');
   console.log('📊 Dados criados:');
-  console.log('- 7 usuários (1 Super Admin, 1 Admin, 1 Suporte, 1 Financeiro, 3 Usuários)');
+  console.log(
+    '- 7 usuários (1 Super Admin, 1 Admin, 1 Suporte, 1 Financeiro, 3 Usuários)'
+  );
   console.log('- 7 memberships');
   console.log('- 3 oportunidades de investimento');
   console.log('- 4 investimentos de usuários');
@@ -457,7 +479,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch(e => {
     console.error('❌ Erro durante o seed:', e);
     process.exit(1);
   })

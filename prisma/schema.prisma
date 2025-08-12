@@ -1,19 +1,255 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Enums
+model User {
+  id                 String           @id @default(cuid())
+  email              String           @unique
+  password           String
+  firstName          String
+  lastName           String
+  phone              String?
+  cpf                String           @unique
+  birthDate          DateTime
+  street             String?
+  number             String?
+  complement         String?
+  district           String?
+  city               String?
+  state              String?
+  zipCode            String?
+  country            String           @default("BR")
+  role               UserRole         @default(USER)
+  kycStatus          KycStatus        @default(PENDING)
+  kycSubmittedAt     DateTime?
+  kycApprovedAt      DateTime?
+  kycRejectedAt      DateTime?
+  kycRejectionReason String?
+  isActive           Boolean          @default(true)
+  emailVerified      DateTime?
+  referralCode       String           @unique
+  referredBy         String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  documents          Document[]
+  reviewedDocuments  KycDocument[]    @relation("KycDocumentReviewer")
+  kycDocuments       KycDocument[]
+  performedReviews   KycReview[]      @relation("KycReviewer")
+  kycReviews         KycReview[]
+  membership         Membership?
+  notifications      Notification[]
+  tickets            SupportTicket[]
+  transactions       Transaction[]
+  investments        UserInvestment[]
+  referrer           User?            @relation("UserReferrals", fields: [referredBy], references: [id])
+  referrals          User[]           @relation("UserReferrals")
+
+  @@index([referredBy], map: "idx_users_referred_by")
+  @@map("users")
+}
+
+model Membership {
+  id                 String           @id @default(cuid())
+  userId             String           @unique
+  status             MembershipStatus @default(ACTIVE)
+  monthlyFee         Float            @default(20.00)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  nextPaymentDate    DateTime
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("memberships")
+}
+
+model InvestmentOpportunity {
+  id             String             @id @default(cuid())
+  title          String
+  description    String
+  targetAmount   Float
+  currentAmount  Float              @default(0)
+  minInvestment  Float
+  maxInvestment  Float
+  expectedReturn Float?
+  startDate      DateTime
+  endDate        DateTime
+  status         InvestmentStatus   @default(DRAFT)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  documents      Document[]
+  returns        InvestmentReturn[]
+  investments    UserInvestment[]
+
+  @@map("investment_opportunities")
+}
+
+model UserInvestment {
+  id            String                @id @default(cuid())
+  userId        String
+  opportunityId String
+  amount        Float
+  investedAt    DateTime              @default(now())
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  returns       InvestmentReturn[]
+  opportunity   InvestmentOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opportunityId])
+  @@index([opportunityId], map: "idx_user_investments_opportunity_id")
+  @@map("user_investments")
+}
+
+model InvestmentReturn {
+  id               String                @id @default(cuid())
+  opportunityId    String
+  investmentId     String
+  totalSaleAmount  Float
+  platformFee      Float
+  netProfit        Float
+  userReturnAmount Float
+  returnPercentage Float
+  distributedAt    DateTime              @default(now())
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  investment       UserInvestment        @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  opportunity      InvestmentOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([investmentId], map: "idx_investment_returns_investment_id")
+  @@index([opportunityId], map: "idx_investment_returns_opportunity_id")
+  @@map("investment_returns")
+}
+
+model Transaction {
+  id                   String            @id @default(cuid())
+  userId               String
+  type                 TransactionType
+  status               TransactionStatus @default(PENDING)
+  amount               Float
+  description          String
+  gatewayTransactionId String?
+  gatewayResponse      Json?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_transactions_user_id")
+  @@map("transactions")
+}
+
+model Document {
+  id            String                 @id @default(cuid())
+  userId        String?
+  opportunityId String?
+  name          String
+  type          String
+  url           String
+  size          Int?
+  mimeType      String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  opportunity   InvestmentOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  user          User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId], map: "idx_documents_opportunity_id")
+  @@index([userId], map: "idx_documents_user_id")
+  @@map("documents")
+}
+
+model SupportTicket {
+  id          String          @id @default(cuid())
+  userId      String
+  subject     String
+  description String
+  status      TicketStatus    @default(OPEN)
+  priority    TicketPriority  @default(MEDIUM)
+  assignedTo  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    TicketMessage[]
+
+  @@index([userId], map: "idx_support_tickets_user_id")
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id         String        @id @default(cuid())
+  ticketId   String
+  message    String
+  isFromUser Boolean       @default(true)
+  isInternal Boolean       @default(false)
+  authorId   String?
+  createdAt  DateTime      @default(now())
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId], map: "idx_ticket_messages_ticket_id")
+  @@map("ticket_messages")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_notifications_user_id")
+  @@map("notifications")
+}
+
+model KycDocument {
+  id              String            @id @default(cuid())
+  userId          String
+  type            KycDocumentType
+  fileName        String
+  filePath        String
+  fileSize        Int
+  mimeType        String
+  status          KycDocumentStatus @default(PENDING)
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  reviewer        User?             @relation("KycDocumentReviewer", fields: [reviewedBy], references: [id])
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviews         KycReview[]
+
+  @@index([reviewedBy], map: "idx_kyc_documents_reviewed_by")
+  @@index([userId], map: "idx_kyc_documents_user_id")
+  @@map("kyc_documents")
+}
+
+model KycReview {
+  id         String            @id @default(cuid())
+  userId     String
+  documentId String?
+  reviewerId String
+  action     KycDocumentStatus
+  comment    String?
+  createdAt  DateTime          @default(now())
+  document   KycDocument?      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  reviewer   User              @relation("KycReviewer", fields: [reviewerId], references: [id])
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentId], map: "idx_kyc_reviews_document_id")
+  @@index([reviewerId], map: "idx_kyc_reviews_reviewer_id")
+  @@index([userId], map: "idx_kyc_reviews_user_id")
+  @@map("kyc_reviews")
+}
+
 enum UserRole {
   USER
   ADMIN
@@ -75,319 +311,20 @@ enum TicketPriority {
   URGENT
 }
 
-// Models
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  phone     String?
-  cpf       String   @unique
-  birthDate DateTime
-
-  // Address
-  street     String?
-  number     String?
-  complement String?
-  district   String?
-  city       String?
-  state      String?
-  zipCode    String?
-  country    String   @default("BR")
-
-  // Status and verification
-  role         UserRole         @default(USER)
-  kycStatus    KycStatus        @default(PENDING)
-  kycSubmittedAt    DateTime?   // Quando documentos KYC foram enviados
-  kycApprovedAt     DateTime?   // Quando KYC foi aprovado
-  kycRejectedAt     DateTime?   // Quando KYC foi rejeitado
-  kycRejectionReason String?    // Motivo da rejeição do KYC
-  isActive     Boolean          @default(true)
-  emailVerified DateTime?
-
-  // Referral system
-  referralCode String  @unique
-  referredBy   String?
-  referrer     User?   @relation("UserReferrals", fields: [referredBy], references: [id])
-  referrals    User[]  @relation("UserReferrals")
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  membership    Membership?
-  investments   UserInvestment[]
-  transactions  Transaction[]
-  documents     Document[]
-  tickets       SupportTicket[]
-  notifications Notification[]
-  kycDocuments  KycDocument[]
-  kycReviews    KycReview[]
-
-  // KYC Reviewer relations
-  reviewedDocuments KycDocument[] @relation("KycDocumentReviewer")
-  performedReviews  KycReview[]   @relation("KycReviewer")
-
-  @@map("users")
-}
-
-model Membership {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  status             MembershipStatus @default(ACTIVE)
-  monthlyFee         Float            @default(20.00)
-  currentPeriodStart DateTime
-  currentPeriodEnd   DateTime
-  nextPaymentDate    DateTime
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("memberships")
-}
-
-model InvestmentOpportunity {
-  id          String @id @default(cuid())
-  title       String
-  description String
-
-  // Financial details
-  targetAmount  Float
-  currentAmount Float   @default(0)
-  minInvestment Float
-  maxInvestment Float
-
-  // Dates
-  startDate DateTime
-  endDate   DateTime
-
-  // Status and metadata
-  status InvestmentStatus @default(DRAFT)
-
-  // Relations
-  investments UserInvestment[]
-  documents   Document[]
-  returns     InvestmentReturn[]
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("investment_opportunities")
-}
-
-model UserInvestment {
-  id           String @id @default(cuid())
-  userId       String
-  opportunityId String
-
-  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  opportunity  InvestmentOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-
-  amount       Float
-  investedAt   DateTime  @default(now())
-
-  // Relations
-  returns      InvestmentReturn[]
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, opportunityId])
-  @@map("user_investments")
-}
-
-model InvestmentReturn {
-  id           String @id @default(cuid())
-  opportunityId String
-  investmentId String
-
-  opportunity  InvestmentOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  investment   UserInvestment        @relation(fields: [investmentId], references: [id], onDelete: Cascade)
-
-  totalSaleAmount    Float
-  platformFee        Float
-  netProfit          Float
-  userReturnAmount   Float
-  returnPercentage   Float
-
-  distributedAt DateTime @default(now())
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("investment_returns")
-}
-
-model Transaction {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  type        TransactionType
-  status      TransactionStatus @default(PENDING)
-  amount      Float
-  description String
-
-  // Payment gateway data
-  gatewayTransactionId String?
-  gatewayResponse      Json?
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("transactions")
-}
-
-model Document {
-  id     String @id @default(cuid())
-  userId String?
-  opportunityId String?
-
-  user        User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  opportunity InvestmentOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-
-  name        String
-  type        String
-  url         String
-  size        Int?
-  mimeType    String?
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("documents")
-}
-
-model SupportTicket {
-  id       String @id @default(cuid())
-  userId   String
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  subject     String
-  description String
-  status      TicketStatus  @default(OPEN)
-  priority    TicketPriority @default(MEDIUM)
-
-  assignedTo String?
-
-  // Relations
-  messages TicketMessage[]
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("support_tickets")
-}
-
-model TicketMessage {
-  id       String @id @default(cuid())
-  ticketId String
-  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  message   String
-  isFromUser Boolean @default(true)
-  isInternal Boolean @default(false)
-  authorId  String?
-
-  // Timestamps
-  createdAt DateTime @default(now())
-
-  @@map("ticket_messages")
-}
-
-model Notification {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  title   String
-  message String
-  type    String
-  isRead  Boolean @default(false)
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("notifications")
-}
-
-// KYC Document Types
 enum KycDocumentType {
-  IDENTITY_FRONT      // Frente do RG/CNH
-  IDENTITY_BACK       // Verso do RG/CNH
-  CPF_DOCUMENT        // Documento do CPF
-  PROOF_OF_ADDRESS    // Comprovante de residência
-  SELFIE_WITH_DOCUMENT // Selfie segurando documento
-  INCOME_PROOF        // Comprovante de renda
-  BANK_STATEMENT      // Extrato bancário
-  OTHER               // Outros documentos
+  IDENTITY_FRONT
+  IDENTITY_BACK
+  CPF_DOCUMENT
+  PROOF_OF_ADDRESS
+  SELFIE_WITH_DOCUMENT
+  INCOME_PROOF
+  BANK_STATEMENT
+  OTHER
 }
 
-// KYC Document Status
 enum KycDocumentStatus {
-  PENDING     // Aguardando análise
-  APPROVED    // Aprovado
-  REJECTED    // Rejeitado
-  RESUBMIT    // Precisa reenviar
-}
-
-// KYC Documents
-model KycDocument {
-  id          String            @id @default(cuid())
-  userId      String
-  type        KycDocumentType
-  fileName    String
-  filePath    String
-  fileSize    Int
-  mimeType    String
-  status      KycDocumentStatus @default(PENDING)
-
-  // Review information
-  reviewedBy    String?
-  reviewedAt    DateTime?
-  rejectionReason String?
-  notes         String?
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reviewer User?       @relation("KycDocumentReviewer", fields: [reviewedBy], references: [id])
-  reviews  KycReview[]
-
-  @@map("kyc_documents")
-}
-
-// KYC Review History
-model KycReview {
-  id         String            @id @default(cuid())
-  userId     String
-  documentId String?           // Null se for review geral do KYC
-  reviewerId String
-  action     KycDocumentStatus
-  comment    String?
-
-  // Timestamps
-  createdAt DateTime @default(now())
-
-  // Relations
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document KycDocument? @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  reviewer User         @relation("KycReviewer", fields: [reviewerId], references: [id])
-
-  @@map("kyc_reviews")
+  PENDING
+  APPROVED
+  REJECTED
+  RESUBMIT
 }
