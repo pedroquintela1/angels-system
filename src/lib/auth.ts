@@ -81,17 +81,6 @@ export const authOptions: NextAuthOptions = {
         session.user.kycStatus = token.kycStatus as KycStatus;
         session.user.membershipStatus =
           token.membershipStatus as MembershipStatus;
-
-        // Fetch fresh user data to get updated name
-        const freshUser = await prisma.user.findUnique({
-          where: { id: token.sub! },
-          select: { firstName: true, lastName: true, email: true },
-        });
-
-        if (freshUser) {
-          session.user.name = `${freshUser.firstName} ${freshUser.lastName}`;
-          session.user.email = freshUser.email;
-        }
       }
       return session;
     },

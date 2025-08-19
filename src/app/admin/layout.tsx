@@ -30,7 +30,7 @@ export default function AdminLayoutPage({ children }: AdminLayoutProps) {
 
     // Se houver sessão, verificar se tem permissão de admin
     if (session?.user) {
-      const allowedRoles = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT', 'FINANCIAL'];
+      const allowedRoles = ['ADMIN', 'ADMIN', 'SUPPORT', 'FINANCIAL'];
       if (!allowedRoles.includes(session.user.role)) {
         router.push('/admin/login');
         return;
@@ -56,7 +56,7 @@ export default function AdminLayoutPage({ children }: AdminLayoutProps) {
   }
 
   // Se não houver sessão ou não for admin, não renderizar nada (redirecionamento já foi feito)
-  if (!session || !['ADMIN', 'SUPER_ADMIN', 'SUPPORT', 'FINANCIAL'].includes(session.user.role)) {
+  if (!session || !['ADMIN', 'ADMIN', 'SUPPORT', 'FINANCIAL'].includes(session.user.role)) {
     return null;
   }
 

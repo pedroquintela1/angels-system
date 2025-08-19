@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       select: { role: true },
     });
 
-    if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+    if (user?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -28,31 +28,17 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') || 'all';
     const status = searchParams.get('status') || 'all';
     const userId = searchParams.get('userId');
+    const opportunityId = searchParams.get('opportunityId');
 
-    // Build where clause for transactions
+    // Build where clause
     const where: any = {};
 
     if (type !== 'all') {
-      // Map frontend filter types to database types
-      const typeMapping: Record<string, string[]> = {
-        membership: ['MEMBERSHIP_PAYMENT'],
-        investment: ['INVESTMENT'],
-        return: ['RETURN'],
-        bonus: ['REFERRAL_BONUS'],
-        lottery: ['LOTTERY_PURCHASE', 'LOTTERY_PRIZE'],
-      };
-
-      if (typeMapping[type]) {
-        where.type = { in: typeMapping[type] };
-      } else if (
-        type === 'MEMBERSHIP_PAYMENT' ||
-        type === 'INVESTMENT' ||
-        type === 'RETURN' ||
-        type === 'REFERRAL_BONUS' ||
-        type === 'LOTTERY_PURCHASE' ||
-        type === 'LOTTERY_PRIZE'
-      ) {
-        where.type = type;
+      // Map transaction types to our data model
+      if (type === 'investment') {
+        // We'll get investments from the Investment table
+      } else if (type === 'commission') {
+        // We'll need to create a separate query for commissions
       }
     }
 
@@ -64,8 +50,12 @@ export async function GET(request: NextRequest) {
       where.userId = userId;
     }
 
-    // Get transactions from the Transaction table
-    const transactions = await prisma.transaction.findMany({
+    if (opportunityId) {
+      where.opportunityId = opportunityId;
+    }
+
+    // Get investments (main transaction type)
+    const investments = await prisma.userInvestment.findMany({
       where,
       include: {
         user: {
@@ -76,6 +66,12 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
+        opportunity: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -84,28 +80,27 @@ export async function GET(request: NextRequest) {
       skip: offset,
     });
 
-    // Get total count for pagination
-    const totalCount = await prisma.transaction.count({ where });
-
-    // Format transactions for frontend
-    const formattedTransactions = transactions.map(transaction => ({
-      id: transaction.id,
-      type: transaction.type,
-      amount: transaction.amount,
-      status: transaction.status,
-      description: transaction.description,
-      userId: transaction.userId,
-      userName: `${transaction.user.firstName} ${transaction.user.lastName}`,
-      userEmail: transaction.user.email,
-      opportunityId: null,
-      opportunityTitle: null,
-      createdAt: transaction.createdAt.toISOString(),
-      updatedAt: transaction.updatedAt.toISOString(),
-      gatewayTransactionId: transaction.gatewayTransactionId,
+    // Transform investments to transaction format
+    const transactions = investments.map(investment => ({
+      id: investment.id,
+      type: 'investment' as const,
+      amount: investment.amount,
+      status: 'confirmed',
+      description: `Investimento em ${investment.opportunity?.title || 'Oportunidade'}`,
+      userId: investment.userId,
+      userName: `${investment.user.firstName} ${investment.user.lastName}`,
+      userEmail: investment.user.email,
+      opportunityId: investment.opportunityId,
+      opportunityTitle: investment.opportunity?.title,
+      createdAt: investment.createdAt.toISOString(),
+      updatedAt: investment.updatedAt.toISOString(),
     }));
 
+    // Get total count for pagination
+    const totalCount = await prisma.userInvestment.count({ where });
+
     return NextResponse.json({
-      transactions: formattedTransactions,
+      transactions,
       pagination: {
         total: totalCount,
         limit,
@@ -137,12 +132,19 @@ export async function POST(request: NextRequest) {
       select: { role: true },
     });
 
-    if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+    if (user?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
     const body = await request.json();
-    const { type, amount, description, userId, status = 'PENDING' } = body;
+    const {
+      type,
+      amount,
+      description,
+      userId,
+      opportunityId,
+      status = 'pending',
+    } = body;
 
     // Validate required fields
     if (!type || !amount || !description || !userId) {
@@ -165,79 +167,76 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate transaction type
-    const validTypes = [
-      'MEMBERSHIP_PAYMENT',
-      'INVESTMENT',
-      'RETURN',
-      'REFERRAL_BONUS',
-      'LOTTERY_PURCHASE',
-      'LOTTERY_PRIZE',
-    ];
-    if (!validTypes.includes(type)) {
-      return NextResponse.json(
-        { error: 'Tipo de transação inválido' },
-        { status: 400 }
-      );
-    }
+    // For now, we'll create manual transactions as investments with a special flag
+    // In a full implementation, you'd have a separate Transaction table
+    let transaction;
 
-    // Validate status
-    const validStatuses = [
-      'PENDING',
-      'COMPLETED',
-      'FAILED',
-      'CANCELLED',
-      'REFUNDED',
-    ];
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json(
-        { error: 'Status de transação inválido' },
-        { status: 400 }
-      );
-    }
+    if (type === 'investment' && opportunityId) {
+      // Validate opportunity exists
+      const opportunity = await prisma.investmentOpportunity.findUnique({
+        where: { id: opportunityId },
+        select: { id: true, title: true },
+      });
 
-    // Create transaction
-    const transaction = await prisma.transaction.create({
-      data: {
-        type,
-        amount: parseFloat(amount),
-        description,
-        status,
-        userId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+      if (!opportunity) {
+        return NextResponse.json(
+          { error: 'Oportunidade não encontrada' },
+          { status: 404 }
+        );
+      }
+
+      transaction = await prisma.userInvestment.create({
+        data: {
+          amount: parseFloat(amount),
+          userId,
+          opportunityId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          opportunity: {
+            select: {
+              id: true,
+              title: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    // Format transaction for response
-    const formattedTransaction = {
-      id: transaction.id,
-      type: transaction.type,
-      amount: transaction.amount,
-      status: transaction.status,
-      description: transaction.description,
-      userId: transaction.userId,
-      userName: `${transaction.user.firstName} ${transaction.user.lastName}`,
-      userEmail: transaction.user.email,
-      opportunityId: null,
-      opportunityTitle: null,
-      createdAt: transaction.createdAt.toISOString(),
-      updatedAt: transaction.updatedAt.toISOString(),
-      gatewayTransactionId: transaction.gatewayTransactionId,
-    };
+      // Transform to transaction format
+      const formattedTransaction = {
+        id: transaction.id,
+        type: 'investment' as const,
+        amount: transaction.amount,
+        status: 'confirmed',
+        description: `Investimento em ${transaction.opportunity?.title || 'Oportunidade'}`,
+        userId: transaction.userId,
+        userName: `${transaction.user.firstName} ${transaction.user.lastName}`,
+        userEmail: transaction.user.email,
+        opportunityId: transaction.opportunityId,
+        opportunityTitle: transaction.opportunity?.title,
+        createdAt: transaction.createdAt.toISOString(),
+        updatedAt: transaction.updatedAt.toISOString(),
+      };
 
-    return NextResponse.json({
-      message: 'Transação criada com sucesso',
-      transaction: formattedTransaction,
-    });
+      return NextResponse.json({
+        message: 'Transação criada com sucesso',
+        transaction: formattedTransaction,
+      });
+    }
+
+    // For other transaction types, you would implement similar logic
+    // For now, return an error for unsupported types
+    return NextResponse.json(
+      { error: 'Tipo de transação não suportado ainda' },
+      { status: 400 }
+    );
   } catch (error) {
     console.error('Create transaction API error:', error);
     return NextResponse.json(

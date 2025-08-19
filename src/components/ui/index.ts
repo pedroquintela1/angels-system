@@ -2,6 +2,7 @@
 export { Button, buttonVariants } from './button';
 export { Input } from './input';
 export { Label } from './label';
+export { Checkbox } from './checkbox';
 export {
   Card,
   CardHeader,
@@ -21,10 +22,3 @@ export {
   TableCell,
   TableCaption,
 } from './table';
-export {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-  MetricTooltip,
-} from './tooltip';

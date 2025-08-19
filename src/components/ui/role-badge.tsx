@@ -12,12 +12,16 @@ interface RoleBadgeProps {
 
 /**
  * Component to display user role as a badge
- * 
+ *
  * @param role - User role to display
  * @param showDescription - Whether to show role description as tooltip
  * @param size - Size of the badge
  */
-export function RoleBadge({ role, showDescription = false, size = 'md' }: RoleBadgeProps) {
+export function RoleBadge({
+  role,
+  showDescription = false,
+  size = 'md',
+}: RoleBadgeProps) {
   const getVariant = (role: UserRole) => {
     switch (ROLE_COLORS[role]) {
       case 'blue':
@@ -28,8 +32,6 @@ export function RoleBadge({ role, showDescription = false, size = 'md' }: RoleBa
         return 'secondary';
       case 'orange':
         return 'warning';
-      case 'red':
-        return 'destructive';
       default:
         return 'default';
     }
@@ -45,8 +47,6 @@ export function RoleBadge({ role, showDescription = false, size = 'md' }: RoleBa
         return 'Financeiro';
       case UserRole.ADMIN:
         return 'Admin';
-      case UserRole.SUPER_ADMIN:
-        return 'Super Admin';
       default:
         return role;
     }
@@ -65,7 +65,7 @@ export function RoleBadge({ role, showDescription = false, size = 'md' }: RoleBa
 
   return (
     <div className="inline-flex items-center">
-      <Badge 
+      <Badge
         variant={getVariant(role)}
         className={getSizeClass(size)}
         title={showDescription ? ROLE_DESCRIPTIONS[role] : undefined}

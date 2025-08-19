@@ -36,8 +36,8 @@ export async function GET(
       );
     }
 
-    // Check if user has admin access
-    const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
+  // Check if user has admin access
+  const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.FINANCIAL, UserRole.SUPPORT];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
       return NextResponse.json(
         { error: 'Acesso negado' },
@@ -169,8 +169,8 @@ export async function POST(
       );
     }
 
-    // Check if user has admin access
-    const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
+  // Check if user has admin access
+  const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.FINANCIAL, UserRole.SUPPORT];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
       return NextResponse.json(
         { error: 'Acesso negado' },

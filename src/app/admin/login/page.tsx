@@ -6,7 +6,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
 export default function AdminLoginPage() {
@@ -27,25 +33,25 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    console.log('🔄 Iniciando processo de login...');
+
+    console.log('Iniciando processo de login...');
     setLoading(true);
     setError('');
 
     try {
       // Mostrar feedback imediato
       console.log('📧 Fazendo login com:', formData.email);
-      
+
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
         redirect: false,
       });
 
-      console.log('✅ Resultado do signIn:', result);
+      console.log('Resultado do signIn:', result);
 
       if (result?.error) {
-        console.log('❌ Erro no signIn:', result.error);
+        console.log('Erro no signIn:', result.error);
         setError('Credenciais inválidas');
         return;
       }
@@ -58,25 +64,24 @@ export default function AdminLoginPage() {
       console.log('👤 Sessão obtida:', session);
 
       if (!session?.user) {
-        console.log('❌ Sessão inválida');
+        console.log('Sessão inválida');
         setError('Erro ao verificar sessão');
         return;
       }
 
       // Verificar se tem role de admin
-      const allowedRoles = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT', 'FINANCIAL'];
+      const allowedRoles = ['ADMIN', 'ADMIN', 'SUPPORT', 'FINANCIAL'];
       if (!allowedRoles.includes(session.user.role)) {
-        console.log('❌ Role não permitido:', session.user.role);
+        console.log('Role não permitido:', session.user.role);
         setError('Acesso negado. Você não tem permissões administrativas.');
         return;
       }
 
       // Feedback de sucesso antes do redirecionamento
-      console.log('🎉 Login bem-sucedido! Redirecionando para /admin');
-      
+      console.log('Login bem-sucedido! Redirecionando para /admin');
+
       // Redirecionar para o painel admin
       router.push('/admin');
-      
     } catch (error) {
       console.error('💥 Erro crítico no login:', error);
       setError('Erro interno. Tente novamente.');
@@ -92,18 +97,32 @@ export default function AdminLoginPage() {
         {/* Header */}
         <div className="text-center">
           <div className="mx-auto h-16 w-16 bg-purple-600 rounded-full flex items-center justify-center mb-4">
-            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            <svg
+              className="h-8 w-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white">Painel Administrativo</h1>
+          <h1 className="text-3xl font-bold text-white">
+            Painel Administrativo
+          </h1>
           <p className="mt-2 text-purple-200">Angels System</p>
         </div>
 
         {/* Login Card */}
         <Card className="bg-white/10 backdrop-blur-md border-white/20">
           <CardHeader>
-            <CardTitle className="text-white text-center">Acesso Administrativo</CardTitle>
+            <CardTitle className="text-white text-center">
+              Acesso Administrativo
+            </CardTitle>
             <CardDescription className="text-purple-200 text-center">
               Digite suas credenciais de administrador
             </CardDescription>
@@ -164,19 +183,30 @@ export default function AdminLoginPage() {
 
             {/* Credenciais de Teste */}
             <div className="mt-6 p-4 bg-blue-500/20 border border-blue-500/50 rounded-md">
-              <h3 className="text-blue-200 font-medium mb-2">Credenciais de Teste:</h3>
+              <h3 className="text-blue-200 font-medium mb-2">
+                Credenciais de Teste:
+              </h3>
               <div className="space-y-1 text-sm text-blue-100">
-                <p><strong>Super Admin:</strong> admin@angelssystem.com / 123456</p>
-                <p><strong>Admin:</strong> admin2@angelssystem.com / 123456</p>
-                <p><strong>Suporte:</strong> suporte@angelssystem.com / 123456</p>
-                <p><strong>Financeiro:</strong> financeiro@angelssystem.com / 123456</p>
+                <p>
+                  <strong>Super Admin:</strong> admin@angelssystem.com / 123456
+                </p>
+                <p>
+                  <strong>Admin:</strong> admin2@angelssystem.com / 123456
+                </p>
+                <p>
+                  <strong>Suporte:</strong> suporte@angelssystem.com / 123456
+                </p>
+                <p>
+                  <strong>Financeiro:</strong> financeiro@angelssystem.com /
+                  123456
+                </p>
               </div>
             </div>
 
             {/* Links */}
             <div className="mt-6 text-center space-y-2">
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className="text-purple-200 hover:text-white text-sm transition-colors"
               >
                 ← Voltar para página inicial
@@ -187,9 +217,7 @@ export default function AdminLoginPage() {
 
         {/* Footer */}
         <div className="text-center text-xs text-purple-300">
-          <p>
-            ⚠️ Acesso restrito apenas para administradores autorizados
-          </p>
+          <p>⚠️ Acesso restrito apenas para administradores autorizados</p>
         </div>
       </div>
     </div>

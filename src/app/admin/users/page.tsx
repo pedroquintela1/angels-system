@@ -2,26 +2,40 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { 
-  Search, 
-  MoreHorizontal, 
-  UserCheck, 
-  UserX, 
-  Edit, 
-  Eye, 
+import {
+  Search,
+  MoreHorizontal,
+  UserCheck,
+  UserX,
+  Edit,
+  Eye,
   Shield,
   Users,
   UserPlus,
   Filter,
   Download,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -30,8 +44,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { formatDate } from '@/lib/utils';
 
 interface User {
@@ -70,15 +91,21 @@ export default function UsersManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  
+
   // Filtros
   const [filters, setFilters] = useState<UserFilters>({
     search: '',
     role: 'all',
     status: 'all',
     kycStatus: 'all',
-    membershipStatus: 'all'
+    membershipStatus: 'all',
   });
+
+  // Estados de paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [paginatedUsers, setPaginatedUsers] = useState<User[]>([]);
 
   // Estados para modais
   const [showUserModal, setShowUserModal] = useState(false);
@@ -118,10 +145,11 @@ export default function UsersManagementPage() {
     let filtered = [...allUsers];
 
     if (filters.search) {
-      filtered = filtered.filter(user =>
-        user.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        user.email.toLowerCase().includes(filters.search.toLowerCase())
+      filtered = filtered.filter(
+        user =>
+          user.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
+          user.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
+          user.email.toLowerCase().includes(filters.search.toLowerCase())
       );
     }
 
@@ -142,7 +170,16 @@ export default function UsersManagementPage() {
     }
 
     setUsers(filtered);
+    setTotalUsers(filtered.length);
+    setCurrentPage(1); // Reset para primeira página quando filtros mudam
   }, [allUsers, filters]);
+
+  // Aplicar paginação aos usuários filtrados
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setPaginatedUsers(users.slice(startIndex, endIndex));
+  }, [users, currentPage, itemsPerPage]);
 
   const fetchUsers = async () => {
     try {
@@ -155,15 +192,17 @@ export default function UsersManagementPage() {
       }
 
       // Carregar todos os usuários sem filtros para cache local
-      const response = await fetch('/api/admin/users', {
+      const response = await fetch('/api/admin/users?limit=500', {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Erro ao carregar usuários: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Erro ao carregar usuários: ${response.status} ${response.statusText}`
+        );
       }
 
       const data = await response.json();
@@ -178,6 +217,24 @@ export default function UsersManagementPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Funções de paginação
+  const totalPages = Math.ceil(totalUsers / itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1); // Reset para primeira página
+  };
+
+  const getPaginationInfo = () => {
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalUsers);
+    return { startItem, endItem, totalUsers };
   };
 
   const handleEditUser = (user: User) => {
@@ -236,14 +293,15 @@ export default function UsersManagementPage() {
         setShowEditModal(false);
         setEditingUser(null);
         console.log('Usuário atualizado com sucesso');
-
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Erro ao atualizar usuário');
       }
     } catch (error) {
       console.error('Erro ao atualizar usuário:', error);
-      setError(error instanceof Error ? error.message : 'Erro ao atualizar usuário');
+      setError(
+        error instanceof Error ? error.message : 'Erro ao atualizar usuário'
+      );
     } finally {
       setProcessing(false);
     }
@@ -253,7 +311,6 @@ export default function UsersManagementPage() {
     const roleNames = {
       USER: 'Usuário',
       ADMIN: 'Administrador',
-      SUPER_ADMIN: 'Super Administrador',
       SUPPORT: 'Suporte',
       FINANCIAL: 'Financeiro',
     };
@@ -281,7 +338,11 @@ export default function UsersManagementPage() {
     }
   };
 
-  const handleKycAction = async (documentId: string, action: string, comment?: string) => {
+  const handleKycAction = async (
+    documentId: string,
+    action: string,
+    comment?: string
+  ) => {
     if (!kycUser) return;
 
     try {
@@ -319,7 +380,9 @@ export default function UsersManagementPage() {
       }
     } catch (error) {
       console.error('Erro ao executar ação KYC:', error);
-      setError(error instanceof Error ? error.message : 'Erro ao executar ação KYC');
+      setError(
+        error instanceof Error ? error.message : 'Erro ao executar ação KYC'
+      );
     } finally {
       setProcessing(false);
     }
@@ -369,15 +432,21 @@ export default function UsersManagementPage() {
         };
 
         // Aqui você pode adicionar um toast de sucesso se tiver implementado
-        console.log(actionMessages[action as keyof typeof actionMessages] || 'Ação executada com sucesso');
-
+        console.log(
+          actionMessages[action as keyof typeof actionMessages] ||
+            'Ação executada com sucesso'
+        );
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Erro ao executar ação');
       }
     } catch (error) {
       console.error('Erro ao executar ação:', error);
-      setError(error instanceof Error ? error.message : 'Erro ao executar ação no usuário');
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao executar ação no usuário'
+      );
     } finally {
       setProcessing(false);
     }
@@ -427,15 +496,18 @@ export default function UsersManagementPage() {
         setBulkAction('');
 
         // Mostrar mensagem de sucesso
-        console.log(`Ação em lote executada com sucesso em ${selectedUsers.length} usuário(s)`);
-
+        console.log(
+          `Ação em lote executada com sucesso em ${selectedUsers.length} usuário(s)`
+        );
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Erro ao executar ação em lote');
       }
     } catch (error) {
       console.error('Erro ao executar ação em lote:', error);
-      setError(error instanceof Error ? error.message : 'Erro ao executar ação em lote');
+      setError(
+        error instanceof Error ? error.message : 'Erro ao executar ação em lote'
+      );
     } finally {
       setProcessing(false);
     }
@@ -443,11 +515,16 @@ export default function UsersManagementPage() {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'SUPER_ADMIN': return 'bg-red-100 text-red-800';
-      case 'ADMIN': return 'bg-purple-100 text-purple-800';
-      case 'SUPPORT': return 'bg-blue-100 text-blue-800';
-      case 'FINANCIAL': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'ADMIN':
+        return 'bg-red-100 text-red-800';
+      case 'ADMIN':
+        return 'bg-purple-100 text-purple-800';
+      case 'SUPPORT':
+        return 'bg-blue-100 text-blue-800';
+      case 'FINANCIAL':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -457,10 +534,14 @@ export default function UsersManagementPage() {
 
   const getMembershipColor = (status: string) => {
     switch (status) {
-      case 'ACTIVE': return 'bg-green-100 text-green-800';
-      case 'EXPIRED': return 'bg-red-100 text-red-800';
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-800';
+      case 'EXPIRED':
+        return 'bg-red-100 text-red-800';
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -490,10 +571,14 @@ export default function UsersManagementPage() {
 
   const getDocumentStatusColor = (status: string) => {
     switch (status) {
-      case 'APPROVED': return 'bg-green-100 text-green-800';
-      case 'REJECTED': return 'bg-red-100 text-red-800';
-      case 'RESUBMIT': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'APPROVED':
+        return 'bg-green-100 text-green-800';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-800';
+      case 'RESUBMIT':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -519,7 +604,9 @@ export default function UsersManagementPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestão de Usuários</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Gestão de Usuários
+          </h1>
           <p className="text-red-600">Erro: {error}</p>
         </div>
       </div>
@@ -531,8 +618,12 @@ export default function UsersManagementPage() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestão de Usuários</h1>
-          <p className="text-gray-600">Gerencie usuários, permissões e verificações KYC</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Gestão de Usuários
+          </h1>
+          <p className="text-gray-600">
+            Gerencie usuários, permissões e verificações KYC
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => fetchUsers()}>
@@ -560,7 +651,7 @@ export default function UsersManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {users.length}
+              {allUsers.length}
             </div>
           </CardContent>
         </Card>
@@ -573,7 +664,7 @@ export default function UsersManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {users.filter(u => u.isActive).length}
+              {allUsers.filter(u => u.isActive).length}
             </div>
           </CardContent>
         </Card>
@@ -586,7 +677,7 @@ export default function UsersManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {users.filter(u => u.kycStatus === 'APPROVED').length}
+              {allUsers.filter(u => u.kycStatus === 'APPROVED').length}
             </div>
           </CardContent>
         </Card>
@@ -599,7 +690,7 @@ export default function UsersManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {users.reduce((sum, u) => sum + u.stats.investments, 0)}
+              {allUsers.reduce((sum, u) => sum + u.stats.investments, 0)}
             </div>
           </CardContent>
         </Card>
@@ -622,13 +713,23 @@ export default function UsersManagementPage() {
                 <Input
                   placeholder="Buscar usuários..."
                   value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  onChange={e =>
+                    setFilters(prev => ({ ...prev, search: e.target.value }))
+                  }
                   className="pl-10"
                 />
               </div>
             </div>
-            
-            <Select value={filters.role} onValueChange={(value) => setFilters(prev => ({ ...prev, role: value === 'all' ? '' : value }))}>
+
+            <Select
+              value={filters.role}
+              onValueChange={value =>
+                setFilters(prev => ({
+                  ...prev,
+                  role: value === 'all' ? '' : value,
+                }))
+              }
+            >
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Função" />
               </SelectTrigger>
@@ -636,13 +737,21 @@ export default function UsersManagementPage() {
                 <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="USER">Usuário</SelectItem>
                 <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                <SelectItem value="ADMIN">Super Admin</SelectItem>
                 <SelectItem value="SUPPORT">Suporte</SelectItem>
                 <SelectItem value="FINANCIAL">Financeiro</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === 'all' ? '' : value }))}>
+            <Select
+              value={filters.status}
+              onValueChange={value =>
+                setFilters(prev => ({
+                  ...prev,
+                  status: value === 'all' ? '' : value,
+                }))
+              }
+            >
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -653,7 +762,15 @@ export default function UsersManagementPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.kycStatus} onValueChange={(value) => setFilters(prev => ({ ...prev, kycStatus: value === 'all' ? '' : value }))}>
+            <Select
+              value={filters.kycStatus}
+              onValueChange={value =>
+                setFilters(prev => ({
+                  ...prev,
+                  kycStatus: value === 'all' ? '' : value,
+                }))
+              }
+            >
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="KYC" />
               </SelectTrigger>
@@ -664,6 +781,28 @@ export default function UsersManagementPage() {
                 <SelectItem value="REJECTED">Rejeitado</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Controle de itens por página */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Mostrar:</span>
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={value =>
+                  handleItemsPerPageChange(parseInt(value))
+                }
+              >
+                <SelectTrigger className="w-[80px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">200</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Bulk Actions */}
@@ -695,8 +834,10 @@ export default function UsersManagementPage() {
             <div className="grid grid-cols-12 gap-4 p-4 bg-gray-50 rounded-lg font-medium text-sm text-gray-600">
               <div className="col-span-1">
                 <Checkbox
-                  checked={selectedUsers.length === users.length && users.length > 0}
-                  onCheckedChange={(checked) => {
+                  checked={
+                    selectedUsers.length === users.length && users.length > 0
+                  }
+                  onCheckedChange={checked => {
                     if (checked) {
                       setSelectedUsers(users.map(u => u.id));
                     } else {
@@ -715,7 +856,7 @@ export default function UsersManagementPage() {
             </div>
 
             {/* Table Rows */}
-            {users.map((user) => (
+            {paginatedUsers.map(user => (
               <div
                 key={user.id}
                 className="grid grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-gray-50"
@@ -723,19 +864,23 @@ export default function UsersManagementPage() {
                 <div className="col-span-1">
                   <Checkbox
                     checked={selectedUsers.includes(user.id)}
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={checked => {
                       if (checked) {
                         setSelectedUsers(prev => [...prev, user.id]);
                       } else {
-                        setSelectedUsers(prev => prev.filter(id => id !== user.id));
+                        setSelectedUsers(prev =>
+                          prev.filter(id => id !== user.id)
+                        );
                       }
                     }}
                   />
                 </div>
-                
+
                 <div className="col-span-3">
                   <div>
-                    <h3 className="font-medium">{user.firstName} {user.lastName}</h3>
+                    <h3 className="font-medium">
+                      {user.firstName} {user.lastName}
+                    </h3>
                     <p className="text-sm text-gray-600">{user.email}</p>
                     <p className="text-xs text-gray-500">
                       Criado em {formatDate(user.createdAt)}
@@ -756,13 +901,20 @@ export default function UsersManagementPage() {
                 </div>
 
                 <div className="col-span-1">
-                  <Badge className={
-                    user.kycStatus === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                    user.kycStatus === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }>
-                    {user.kycStatus === 'APPROVED' ? 'Aprovado' :
-                     user.kycStatus === 'REJECTED' ? 'Rejeitado' : 'Pendente'}
+                  <Badge
+                    className={
+                      user.kycStatus === 'APPROVED'
+                        ? 'bg-green-100 text-green-800'
+                        : user.kycStatus === 'REJECTED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                    }
+                  >
+                    {user.kycStatus === 'APPROVED'
+                      ? 'Aprovado'
+                      : user.kycStatus === 'REJECTED'
+                        ? 'Rejeitado'
+                        : 'Pendente'}
                   </Badge>
                 </div>
 
@@ -788,10 +940,12 @@ export default function UsersManagementPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Ações</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => {
-                        setSelectedUser(user);
-                        setShowUserModal(true);
-                      }}>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setShowUserModal(true);
+                        }}
+                      >
                         <Eye className="mr-2 h-4 w-4" />
                         Visualizar
                       </DropdownMenuItem>
@@ -800,7 +954,14 @@ export default function UsersManagementPage() {
                         Editar
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleUserAction(user.id, user.isActive ? 'deactivate' : 'activate')}>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          handleUserAction(
+                            user.id,
+                            user.isActive ? 'deactivate' : 'activate'
+                          )
+                        }
+                      >
                         {user.isActive ? (
                           <>
                             <UserX className="mr-2 h-4 w-4" />
@@ -827,23 +988,103 @@ export default function UsersManagementPage() {
           {users.length === 0 && (
             <div className="text-center py-8">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum usuário encontrado</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                Nenhum usuário encontrado
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
                 Tente ajustar os filtros ou criar um novo usuário.
               </p>
             </div>
           )}
 
-          {/* Informações dos resultados */}
+          {/* Informações dos resultados e paginação */}
           {users.length > 0 && (
-            <div className="flex items-center justify-between pt-4 border-t">
-              <p className="text-sm text-gray-600">
-                Mostrando {users.length} de {allUsers.length} usuários
-              </p>
-              <Button variant="outline" onClick={fetchUsers}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Recarregar Dados
-              </Button>
+            <div className="space-y-4 pt-4 border-t">
+              {/* Informações dos resultados */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  Mostrando {(currentPage - 1) * itemsPerPage + 1} a{' '}
+                  {Math.min(currentPage * itemsPerPage, totalUsers)} de{' '}
+                  {totalUsers} usuários
+                </p>
+                <Button variant="outline" onClick={fetchUsers}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Recarregar Dados
+                </Button>
+              </div>
+
+              {/* Controles de paginação */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    Primeira
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Anterior
+                  </Button>
+
+                  {/* Números das páginas */}
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNumber;
+                      if (totalPages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <Button
+                          key={pageNumber}
+                          variant={
+                            currentPage === pageNumber ? 'default' : 'outline'
+                          }
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className="w-10"
+                        >
+                          {pageNumber}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage(Math.min(totalPages, currentPage + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                  >
+                    Próxima
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Última
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -864,51 +1105,82 @@ export default function UsersManagementPage() {
               {/* Informações Básicas */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Nome Completo</label>
-                  <p className="text-sm">{selectedUser.firstName} {selectedUser.lastName}</p>
+                  <label className="text-sm font-medium text-gray-600">
+                    Nome Completo
+                  </label>
+                  <p className="text-sm">
+                    {selectedUser.firstName} {selectedUser.lastName}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Email</label>
+                  <label className="text-sm font-medium text-gray-600">
+                    Email
+                  </label>
                   <p className="text-sm">{selectedUser.email}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Função</label>
+                  <label className="text-sm font-medium text-gray-600">
+                    Função
+                  </label>
                   <Badge className={getRoleColor(selectedUser.role)}>
                     {selectedUser.roleInfo.name}
                   </Badge>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Status</label>
+                  <label className="text-sm font-medium text-gray-600">
+                    Status
+                  </label>
                   <Badge className={getStatusColor(selectedUser.isActive)}>
                     {selectedUser.isActive ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Status KYC</label>
-                  <Badge className={
-                    selectedUser.kycStatus === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                    selectedUser.kycStatus === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }>
-                    {selectedUser.kycStatus === 'APPROVED' ? 'Aprovado' :
-                     selectedUser.kycStatus === 'REJECTED' ? 'Rejeitado' : 'Pendente'}
+                  <label className="text-sm font-medium text-gray-600">
+                    Status KYC
+                  </label>
+                  <Badge
+                    className={
+                      selectedUser.kycStatus === 'APPROVED'
+                        ? 'bg-green-100 text-green-800'
+                        : selectedUser.kycStatus === 'REJECTED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                    }
+                  >
+                    {selectedUser.kycStatus === 'APPROVED'
+                      ? 'Aprovado'
+                      : selectedUser.kycStatus === 'REJECTED'
+                        ? 'Rejeitado'
+                        : 'Pendente'}
                   </Badge>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Investimentos</label>
-                  <p className="text-sm">{selectedUser.stats.investments} investimento(s)</p>
+                  <label className="text-sm font-medium text-gray-600">
+                    Investimentos
+                  </label>
+                  <p className="text-sm">
+                    {selectedUser.stats.investments} investimento(s)
+                  </p>
                 </div>
               </div>
 
               {/* Datas */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Criado em</label>
-                  <p className="text-sm">{formatDate(selectedUser.createdAt)}</p>
+                  <label className="text-sm font-medium text-gray-600">
+                    Criado em
+                  </label>
+                  <p className="text-sm">
+                    {formatDate(selectedUser.createdAt)}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Última atualização</label>
-                  <p className="text-sm">{formatDate(selectedUser.updatedAt)}</p>
+                  <label className="text-sm font-medium text-gray-600">
+                    Última atualização
+                  </label>
+                  <p className="text-sm">
+                    {formatDate(selectedUser.updatedAt)}
+                  </p>
                 </div>
               </div>
 
@@ -918,7 +1190,10 @@ export default function UsersManagementPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    handleUserAction(selectedUser.id, selectedUser.isActive ? 'deactivate' : 'activate');
+                    handleUserAction(
+                      selectedUser.id,
+                      selectedUser.isActive ? 'deactivate' : 'activate'
+                    );
                     setShowUserModal(false);
                   }}
                   disabled={processing}
@@ -981,43 +1256,64 @@ export default function UsersManagementPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Nome</label>
+                  <label className="text-sm font-medium text-gray-600">
+                    Nome
+                  </label>
                   <Input
                     value={editForm.firstName}
-                    onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                    onChange={e =>
+                      setEditForm({ ...editForm, firstName: e.target.value })
+                    }
                     placeholder="Nome"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Sobrenome</label>
+                  <label className="text-sm font-medium text-gray-600">
+                    Sobrenome
+                  </label>
                   <Input
                     value={editForm.lastName}
-                    onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                    onChange={e =>
+                      setEditForm({ ...editForm, lastName: e.target.value })
+                    }
                     placeholder="Sobrenome"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-600">Email</label>
+                <label className="text-sm font-medium text-gray-600">
+                  Email
+                </label>
                 <Input
                   type="email"
                   value={editForm.email}
-                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  onChange={e =>
+                    setEditForm({ ...editForm, email: e.target.value })
+                  }
                   placeholder="Email"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-600">Função</label>
-                <Select value={editForm.role} onValueChange={(value) => setEditForm({ ...editForm, role: value })}>
+                <label className="text-sm font-medium text-gray-600">
+                  Função
+                </label>
+                <Select
+                  value={editForm.role}
+                  onValueChange={value =>
+                    setEditForm({ ...editForm, role: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a função" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="USER">Usuário</SelectItem>
                     <SelectItem value="ADMIN">Administrador</SelectItem>
-                    <SelectItem value="SUPER_ADMIN">Super Administrador</SelectItem>
+                    <SelectItem value="ADMIN">
+                      Super Administrador
+                    </SelectItem>
                     <SelectItem value="SUPPORT">Suporte</SelectItem>
                     <SelectItem value="FINANCIAL">Financeiro</SelectItem>
                   </SelectContent>
@@ -1028,9 +1324,14 @@ export default function UsersManagementPage() {
                 <Checkbox
                   id="isActive"
                   checked={editForm.isActive}
-                  onCheckedChange={(checked) => setEditForm({ ...editForm, isActive: !!checked })}
+                  onCheckedChange={checked =>
+                    setEditForm({ ...editForm, isActive: !!checked })
+                  }
                 />
-                <label htmlFor="isActive" className="text-sm font-medium text-gray-600">
+                <label
+                  htmlFor="isActive"
+                  className="text-sm font-medium text-gray-600"
+                >
                   Usuário ativo
                 </label>
               </div>
@@ -1049,7 +1350,12 @@ export default function UsersManagementPage() {
             </Button>
             <Button
               onClick={handleSaveEdit}
-              disabled={processing || !editForm.firstName || !editForm.lastName || !editForm.email}
+              disabled={
+                processing ||
+                !editForm.firstName ||
+                !editForm.lastName ||
+                !editForm.email
+              }
             >
               {processing ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
@@ -1069,7 +1375,9 @@ export default function UsersManagementPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-600">Selecione a ação</label>
+              <label className="text-sm font-medium text-gray-600">
+                Selecione a ação
+              </label>
               <Select value={bulkAction} onValueChange={setBulkAction}>
                 <SelectTrigger>
                   <SelectValue placeholder="Escolha uma ação" />
@@ -1109,7 +1417,9 @@ export default function UsersManagementPage() {
       <Dialog open={showKycModal} onOpenChange={setShowKycModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Verificação KYC - {kycUser?.firstName} {kycUser?.lastName}</DialogTitle>
+            <DialogTitle>
+              Verificação KYC - {kycUser?.firstName} {kycUser?.lastName}
+            </DialogTitle>
             <DialogDescription>
               Analise e aprove os documentos de verificação de identidade
             </DialogDescription>
@@ -1125,9 +1435,12 @@ export default function UsersManagementPage() {
               {/* Progress Bar */}
               <div className="bg-gray-100 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Progresso da Verificação</span>
+                  <span className="text-sm font-medium">
+                    Progresso da Verificação
+                  </span>
                   <span className="text-sm text-gray-600">
-                    {kycData.progress.completed}/{kycData.progress.total} documentos aprovados
+                    {kycData.progress.completed}/{kycData.progress.total}{' '}
+                    documentos aprovados
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -1143,87 +1456,109 @@ export default function UsersManagementPage() {
 
               {/* Document Types */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(kycData.documentsByType).map(([type, documents]) => (
-                  <div key={type} className="border rounded-lg p-4">
-                    <h4 className="font-medium mb-3">
-                      {getDocumentTypeName(type)}
-                    </h4>
+                {Object.entries(kycData.documentsByType).map(
+                  ([type, documents]) => (
+                    <div key={type} className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-3">
+                        {getDocumentTypeName(type)}
+                      </h4>
 
-                    {(documents as any[]).map((doc: any) => (
-                      <div key={doc.id} className="border rounded p-3 mb-2 last:mb-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">{doc.fileName}</span>
-                          <Badge className={getDocumentStatusColor(doc.status)}>
-                            {getDocumentStatusName(doc.status)}
-                          </Badge>
-                        </div>
-
-                        <div className="text-xs text-gray-500 mb-2">
-                          Enviado em: {formatDate(doc.createdAt)}
-                          {doc.reviewedAt && (
-                            <span className="block">
-                              Revisado em: {formatDate(doc.reviewedAt)}
+                      {(documents as any[]).map((doc: any) => (
+                        <div
+                          key={doc.id}
+                          className="border rounded p-3 mb-2 last:mb-0"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium">
+                              {doc.fileName}
                             </span>
+                            <Badge
+                              className={getDocumentStatusColor(doc.status)}
+                            >
+                              {getDocumentStatusName(doc.status)}
+                            </Badge>
+                          </div>
+
+                          <div className="text-xs text-gray-500 mb-2">
+                            Enviado em: {formatDate(doc.createdAt)}
+                            {doc.reviewedAt && (
+                              <span className="block">
+                                Revisado em: {formatDate(doc.reviewedAt)}
+                              </span>
+                            )}
+                          </div>
+
+                          {doc.rejectionReason && (
+                            <div className="text-xs text-red-600 mb-2 p-2 bg-red-50 rounded">
+                              <strong>Motivo da rejeição:</strong>{' '}
+                              {doc.rejectionReason}
+                            </div>
+                          )}
+
+                          {doc.status === 'PENDING' && (
+                            <div className="flex gap-2 mt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 border-green-600 hover:bg-green-50"
+                                onClick={() =>
+                                  handleKycAction(doc.id, 'APPROVED')
+                                }
+                                disabled={processing}
+                              >
+                                Aprovar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 border-red-600 hover:bg-red-50"
+                                onClick={() => {
+                                  const comment = prompt('Motivo da rejeição:');
+                                  if (comment) {
+                                    handleKycAction(
+                                      doc.id,
+                                      'REJECTED',
+                                      comment
+                                    );
+                                  }
+                                }}
+                                disabled={processing}
+                              >
+                                Rejeitar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
+                                onClick={() => {
+                                  const comment = prompt(
+                                    'Instruções para reenvio:'
+                                  );
+                                  if (comment) {
+                                    handleKycAction(
+                                      doc.id,
+                                      'RESUBMIT',
+                                      comment
+                                    );
+                                  }
+                                }}
+                                disabled={processing}
+                              >
+                                Solicitar Reenvio
+                              </Button>
+                            </div>
                           )}
                         </div>
+                      ))}
 
-                        {doc.rejectionReason && (
-                          <div className="text-xs text-red-600 mb-2 p-2 bg-red-50 rounded">
-                            <strong>Motivo da rejeição:</strong> {doc.rejectionReason}
-                          </div>
-                        )}
-
-                        {doc.status === 'PENDING' && (
-                          <div className="flex gap-2 mt-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-green-600 border-green-600 hover:bg-green-50"
-                              onClick={() => handleKycAction(doc.id, 'APPROVED')}
-                              disabled={processing}
-                            >
-                              Aprovar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 border-red-600 hover:bg-red-50"
-                              onClick={() => {
-                                const comment = prompt('Motivo da rejeição:');
-                                if (comment) {
-                                  handleKycAction(doc.id, 'REJECTED', comment);
-                                }
-                              }}
-                              disabled={processing}
-                            >
-                              Rejeitar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
-                              onClick={() => {
-                                const comment = prompt('Instruções para reenvio:');
-                                if (comment) {
-                                  handleKycAction(doc.id, 'RESUBMIT', comment);
-                                }
-                              }}
-                              disabled={processing}
-                            >
-                              Solicitar Reenvio
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {(documents as any[]).length === 0 && (
-                      <p className="text-sm text-gray-500 italic">
-                        Nenhum documento enviado
-                      </p>
-                    )}
-                  </div>
-                ))}
+                      {(documents as any[]).length === 0 && (
+                        <p className="text-sm text-gray-500 italic">
+                          Nenhum documento enviado
+                        </p>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
 
               {/* Recent Reviews */}
@@ -1232,23 +1567,33 @@ export default function UsersManagementPage() {
                   <h4 className="font-medium mb-3">Histórico de Revisões</h4>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {kycData.reviews.slice(0, 5).map((review: any) => (
-                      <div key={review.id} className="text-sm border-l-2 border-gray-200 pl-3">
+                      <div
+                        key={review.id}
+                        className="text-sm border-l-2 border-gray-200 pl-3"
+                      >
                         <div className="flex items-center justify-between">
                           <span className="font-medium">
-                            {review.document ? getDocumentTypeName(review.document.type) : 'KYC Geral'}
+                            {review.document
+                              ? getDocumentTypeName(review.document.type)
+                              : 'KYC Geral'}
                           </span>
-                          <Badge className={getDocumentStatusColor(review.action)}>
+                          <Badge
+                            className={getDocumentStatusColor(review.action)}
+                          >
                             {getDocumentStatusName(review.action)}
                           </Badge>
                         </div>
                         <p className="text-gray-600">
-                          Por: {review.reviewer.firstName} {review.reviewer.lastName}
+                          Por: {review.reviewer.firstName}{' '}
+                          {review.reviewer.lastName}
                         </p>
                         <p className="text-gray-500">
                           {formatDate(review.createdAt)}
                         </p>
                         {review.comment && (
-                          <p className="text-gray-700 italic">"{review.comment}"</p>
+                          <p className="text-gray-700 italic">
+                            "{review.comment}"
+                          </p>
                         )}
                       </div>
                     ))}

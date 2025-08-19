@@ -19,8 +19,8 @@ export async function GET(
       );
     }
 
-    // Check if user has admin access
-    const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
+  // Check if user has admin access
+  const allowedRoles: UserRole[] = [UserRole.ADMIN];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
       return NextResponse.json(
         { error: 'Acesso negado' },
@@ -96,8 +96,8 @@ export async function PATCH(
 
     const { id: userId } = await params;
 
-    // Check if user has admin access
-    const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
+  // Check if user has admin access
+  const allowedRoles: UserRole[] = [UserRole.ADMIN];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
       return NextResponse.json(
         { error: 'Acesso negado' },
@@ -156,8 +156,8 @@ export async function PATCH(
       );
     }
 
-    // Prevent self-deactivation for super admins
-    if (action === 'deactivate' && session.user.id === userId && session.user.role === UserRole.SUPER_ADMIN) {
+  // Prevent self-deactivation for admins
+  if (action === 'deactivate' && session.user.id === userId && session.user.role === UserRole.ADMIN) {
       return NextResponse.json(
         { error: 'Você não pode desativar sua própria conta' },
         { status: 400 }
@@ -208,10 +208,10 @@ export async function DELETE(
 
     const { id: userId } = await params;
 
-    // Only super admins can delete users
-    if (session.user.role !== UserRole.SUPER_ADMIN) {
+  // Only admins can delete users
+  if (session.user.role !== UserRole.ADMIN) {
       return NextResponse.json(
-        { error: 'Apenas Super Admins podem deletar usuários' },
+    { error: 'Apenas Admins podem deletar usuários' },
         { status: 403 }
       );
     }

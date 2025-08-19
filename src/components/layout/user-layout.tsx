@@ -11,7 +11,7 @@ import {
   HelpCircle,
   Bell,
   LogOut,
-  Shield
+  Shield,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -115,25 +115,25 @@ export function UserLayout({ children }: UserLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 shadow-lg">
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="flex h-16 items-center justify-center border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-900">Angels System</h1>
+          <div className="flex h-16 items-center justify-center border-b border-gray-700">
+            <h1 className="text-xl font-bold text-blue-400">Angels System</h1>
           </div>
 
           {/* User info */}
-          <div className="border-b border-gray-200 p-4">
+          <div className="border-b border-gray-700 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
                   <span className="text-white font-medium">
                     {user?.name?.charAt(0) || 'U'}
                   </span>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
+                  <p className="text-sm font-medium text-white">{user?.name}</p>
+                  <p className="text-xs text-gray-400">{user?.email}</p>
                 </div>
               </div>
 
@@ -144,7 +144,7 @@ export function UserLayout({ children }: UserLayoutProps) {
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 p-4">
-            {navigation.map((item) => {
+            {navigation.map(item => {
               const isActive = pathname === item.href;
               return (
                 <Link
@@ -153,14 +153,16 @@ export function UserLayout({ children }: UserLayoutProps) {
                   className={cn(
                     'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
                     isActive
-                      ? 'bg-blue-100 text-blue-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   )}
                 >
                   <item.icon
                     className={cn(
                       'mr-3 h-5 w-5 flex-shrink-0',
-                      isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                      isActive
+                        ? 'text-white'
+                        : 'text-gray-400 group-hover:text-gray-300'
                     )}
                   />
                   {item.name}
@@ -170,10 +172,10 @@ export function UserLayout({ children }: UserLayoutProps) {
           </nav>
 
           {/* Sign out */}
-          <div className="border-t border-gray-200 p-4">
+          <div className="border-t border-gray-700 p-4">
             <Button
               variant="ghost"
-              className="w-full justify-start"
+              className="w-full justify-start text-gray-300 hover:bg-gray-700 hover:text-white"
               onClick={handleSignOut}
             >
               <LogOut className="mr-3 h-5 w-5" />
@@ -194,3 +196,5 @@ export function UserLayout({ children }: UserLayoutProps) {
     </div>
   );
 }
+
+export default UserLayout;

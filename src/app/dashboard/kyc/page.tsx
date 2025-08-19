@@ -3,10 +3,25 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Upload, FileText, CheckCircle, XCircle, Clock, AlertTriangle, Download, Eye } from 'lucide-react';
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Download,
+  Eye,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -67,7 +82,7 @@ interface KycData {
 export default function KycPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  
+
   const [kycData, setKycData] = useState<KycData | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -92,7 +107,7 @@ export default function KycPage() {
     try {
       setLoading(true);
       const response = await fetch('/api/kyc/upload');
-      
+
       if (response.ok) {
         const data = await response.json();
         setKycData(data);
@@ -132,7 +147,9 @@ export default function KycPage() {
       }
     } catch (error) {
       console.error('Erro no upload:', error);
-      setError(error instanceof Error ? error.message : 'Erro ao enviar documento');
+      setError(
+        error instanceof Error ? error.message : 'Erro ao enviar documento'
+      );
     } finally {
       setUploading(false);
     }
@@ -164,19 +181,27 @@ export default function KycPage() {
 
   const getDocumentStatusColor = (status: string) => {
     switch (status) {
-      case 'APPROVED': return 'bg-green-100 text-green-800';
-      case 'REJECTED': return 'bg-red-100 text-red-800';
-      case 'RESUBMIT': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'APPROVED':
+        return 'bg-green-100 text-green-800';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-800';
+      case 'RESUBMIT':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getDocumentStatusIcon = (status: string) => {
     switch (status) {
-      case 'APPROVED': return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'REJECTED': return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'RESUBMIT': return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-      default: return <Clock className="h-4 w-4 text-gray-600" />;
+      case 'APPROVED':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'REJECTED':
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case 'RESUBMIT':
+        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-600" />;
     }
   };
 
@@ -224,9 +249,12 @@ export default function KycPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Verificação de Identidade (KYC)</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Verificação de Identidade (KYC)
+        </h1>
         <p className="text-gray-600">
-          Complete sua verificação de identidade para acessar todas as funcionalidades da plataforma
+          Complete sua verificação de identidade para acessar todas as
+          funcionalidades da plataforma
         </p>
       </div>
 
@@ -241,7 +269,9 @@ export default function KycPage() {
       {success && (
         <Alert className="border-green-200 bg-green-50">
           <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">{success}</AlertDescription>
+          <AlertDescription className="text-green-800">
+            {success}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -255,7 +285,8 @@ export default function KycPage() {
                 Progresso da Verificação
               </CardTitle>
               <CardDescription>
-                {kycData.progress.completed} de {kycData.progress.total} documentos obrigatórios aprovados
+                {kycData.progress.completed} de {kycData.progress.total}{' '}
+                documentos obrigatórios aprovados
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -263,23 +294,29 @@ export default function KycPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Progresso</span>
-                    <span className="text-sm text-gray-600">{kycData.progress.percentage}%</span>
+                    <span className="text-sm text-gray-600">
+                      {kycData.progress.percentage}%
+                    </span>
                   </div>
-                  <Progress value={kycData.progress.percentage} className="h-2" />
+                  <Progress
+                    value={kycData.progress.percentage}
+                    className="h-2"
+                  />
                 </div>
-                
+
                 {kycData.progress.isComplete ? (
                   <Alert className="border-green-200 bg-green-50">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <AlertDescription className="text-green-800">
-                      🎉 Parabéns! Sua verificação KYC foi concluída com sucesso.
+                      Parabéns! Sua verificação KYC foi concluída com sucesso.
                     </AlertDescription>
                   </Alert>
                 ) : (
                   <Alert>
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      Envie todos os documentos obrigatórios para completar sua verificação.
+                      Envie todos os documentos obrigatórios para completar sua
+                      verificação.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -306,16 +343,25 @@ export default function KycPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {kycData.requiredDocuments.map((docType) => {
+                    {kycData.requiredDocuments.map(docType => {
                       const existingDoc = kycData.documentsByType[docType]?.[0];
-                      const canUpload = !existingDoc || existingDoc.status === 'REJECTED' || existingDoc.status === 'RESUBMIT';
+                      const canUpload =
+                        !existingDoc ||
+                        existingDoc.status === 'REJECTED' ||
+                        existingDoc.status === 'RESUBMIT';
 
                       return (
                         <div key={docType} className="border rounded-lg p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium">{getDocumentTypeName(docType)}</h4>
+                            <h4 className="font-medium">
+                              {getDocumentTypeName(docType)}
+                            </h4>
                             {existingDoc && (
-                              <Badge className={getDocumentStatusColor(existingDoc.status)}>
+                              <Badge
+                                className={getDocumentStatusColor(
+                                  existingDoc.status
+                                )}
+                              >
                                 {getDocumentStatusName(existingDoc.status)}
                               </Badge>
                             )}
@@ -324,7 +370,9 @@ export default function KycPage() {
                           {existingDoc && (
                             <div className="text-sm text-gray-600 mb-2">
                               <p>Arquivo: {existingDoc.fileName}</p>
-                              <p>Enviado em: {formatDate(existingDoc.createdAt)}</p>
+                              <p>
+                                Enviado em: {formatDate(existingDoc.createdAt)}
+                              </p>
                               {existingDoc.rejectionReason && (
                                 <p className="text-red-600 mt-1">
                                   Motivo: {existingDoc.rejectionReason}
@@ -336,13 +384,20 @@ export default function KycPage() {
                                 <DocumentViewer
                                   documentUrl={`/api/kyc/documents/${existingDoc.id}/download`}
                                   documentName={existingDoc.fileName}
-                                  documentType={getDocumentTypeName(existingDoc.type)}
+                                  documentType={getDocumentTypeName(
+                                    existingDoc.type
+                                  )}
                                 />
 
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(`/api/kyc/documents/${existingDoc.id}/download`, '_blank')}
+                                  onClick={() =>
+                                    window.open(
+                                      `/api/kyc/documents/${existingDoc.id}/download`,
+                                      '_blank'
+                                    )
+                                  }
                                 >
                                   <Download className="h-4 w-4 mr-1" />
                                   Download
@@ -356,7 +411,7 @@ export default function KycPage() {
                               <input
                                 type="file"
                                 accept=".jpg,.jpeg,.png,.pdf"
-                                onChange={(e) => {
+                                onChange={e => {
                                   const file = e.target.files?.[0];
                                   if (file) {
                                     handleFileUpload(file, docType);
@@ -399,73 +454,96 @@ export default function KycPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {['INCOME_PROOF', 'BANK_STATEMENT', 'OTHER'].map((docType) => {
-                      const existingDoc = kycData.documentsByType[docType]?.[0];
-                      const canUpload = !existingDoc || existingDoc.status === 'REJECTED' || existingDoc.status === 'RESUBMIT';
+                    {['INCOME_PROOF', 'BANK_STATEMENT', 'OTHER'].map(
+                      docType => {
+                        const existingDoc =
+                          kycData.documentsByType[docType]?.[0];
+                        const canUpload =
+                          !existingDoc ||
+                          existingDoc.status === 'REJECTED' ||
+                          existingDoc.status === 'RESUBMIT';
 
-                      return (
-                        <div key={docType} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium">{getDocumentTypeName(docType)}</h4>
+                        return (
+                          <div key={docType} className="border rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-medium">
+                                {getDocumentTypeName(docType)}
+                              </h4>
+                              {existingDoc && (
+                                <Badge
+                                  className={getDocumentStatusColor(
+                                    existingDoc.status
+                                  )}
+                                >
+                                  {getDocumentStatusName(existingDoc.status)}
+                                </Badge>
+                              )}
+                            </div>
+
                             {existingDoc && (
-                              <Badge className={getDocumentStatusColor(existingDoc.status)}>
-                                {getDocumentStatusName(existingDoc.status)}
-                              </Badge>
+                              <div className="text-sm text-gray-600 mb-2">
+                                <p>Arquivo: {existingDoc.fileName}</p>
+                                <p>
+                                  Enviado em:{' '}
+                                  {formatDate(existingDoc.createdAt)}
+                                </p>
+
+                                {/* Document Actions */}
+                                <div className="mt-2 flex gap-2">
+                                  <DocumentViewer
+                                    documentUrl={`/api/kyc/documents/${existingDoc.id}/download`}
+                                    documentName={existingDoc.fileName}
+                                    documentType={getDocumentTypeName(
+                                      existingDoc.type
+                                    )}
+                                  />
+
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      window.open(
+                                        `/api/kyc/documents/${existingDoc.id}/download`,
+                                        '_blank'
+                                      )
+                                    }
+                                  >
+                                    <Download className="h-4 w-4 mr-1" />
+                                    Download
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+
+                            {canUpload && (
+                              <div className="mt-3">
+                                <input
+                                  type="file"
+                                  accept=".jpg,.jpeg,.png,.pdf"
+                                  onChange={e => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleFileUpload(file, docType);
+                                    }
+                                  }}
+                                  className="hidden"
+                                  id={`upload-${docType}`}
+                                  disabled={uploading}
+                                />
+                                <label
+                                  htmlFor={`upload-${docType}`}
+                                  className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 cursor-pointer disabled:opacity-50"
+                                >
+                                  <Upload className="h-4 w-4" />
+                                  {existingDoc ? 'Reenviar' : 'Enviar'}{' '}
+                                  Documento
+                                </label>
+                              </div>
                             )}
                           </div>
-
-                          {existingDoc && (
-                            <div className="text-sm text-gray-600 mb-2">
-                              <p>Arquivo: {existingDoc.fileName}</p>
-                              <p>Enviado em: {formatDate(existingDoc.createdAt)}</p>
-
-                              {/* Document Actions */}
-                              <div className="mt-2 flex gap-2">
-                                <DocumentViewer
-                                  documentUrl={`/api/kyc/documents/${existingDoc.id}/download`}
-                                  documentName={existingDoc.fileName}
-                                  documentType={getDocumentTypeName(existingDoc.type)}
-                                />
-
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(`/api/kyc/documents/${existingDoc.id}/download`, '_blank')}
-                                >
-                                  <Download className="h-4 w-4 mr-1" />
-                                  Download
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-
-                          {canUpload && (
-                            <div className="mt-3">
-                              <input
-                                type="file"
-                                accept=".jpg,.jpeg,.png,.pdf"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    handleFileUpload(file, docType);
-                                  }
-                                }}
-                                className="hidden"
-                                id={`upload-${docType}`}
-                                disabled={uploading}
-                              />
-                              <label
-                                htmlFor={`upload-${docType}`}
-                                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 cursor-pointer disabled:opacity-50"
-                              >
-                                <Upload className="h-4 w-4" />
-                                {existingDoc ? 'Reenviar' : 'Enviar'} Documento
-                              </label>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      }
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -483,37 +561,58 @@ export default function KycPage() {
                   {kycData.documents.length === 0 ? (
                     <div className="text-center py-8">
                       <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">Nenhum documento enviado ainda</p>
+                      <p className="text-gray-500">
+                        Nenhum documento enviado ainda
+                      </p>
                       <p className="text-sm text-gray-400">
                         Vá para a aba "Enviar Documentos" para começar
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {kycData.documents.map((doc) => (
+                      {kycData.documents.map(doc => (
                         <div key={doc.id} className="border rounded-lg p-4">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               {getDocumentStatusIcon(doc.status)}
-                              <h4 className="font-medium">{getDocumentTypeName(doc.type)}</h4>
+                              <h4 className="font-medium">
+                                {getDocumentTypeName(doc.type)}
+                              </h4>
                             </div>
-                            <Badge className={getDocumentStatusColor(doc.status)}>
+                            <Badge
+                              className={getDocumentStatusColor(doc.status)}
+                            >
                               {getDocumentStatusName(doc.status)}
                             </Badge>
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                             <div>
-                              <p><strong>Arquivo:</strong> {doc.fileName}</p>
-                              <p><strong>Tamanho:</strong> {formatFileSize(doc.fileSize)}</p>
-                              <p><strong>Enviado em:</strong> {formatDate(doc.createdAt)}</p>
+                              <p>
+                                <strong>Arquivo:</strong> {doc.fileName}
+                              </p>
+                              <p>
+                                <strong>Tamanho:</strong>{' '}
+                                {formatFileSize(doc.fileSize)}
+                              </p>
+                              <p>
+                                <strong>Enviado em:</strong>{' '}
+                                {formatDate(doc.createdAt)}
+                              </p>
                             </div>
                             <div>
                               {doc.reviewedAt && (
-                                <p><strong>Revisado em:</strong> {formatDate(doc.reviewedAt)}</p>
+                                <p>
+                                  <strong>Revisado em:</strong>{' '}
+                                  {formatDate(doc.reviewedAt)}
+                                </p>
                               )}
                               {doc.reviewer && (
-                                <p><strong>Revisado por:</strong> {doc.reviewer.firstName} {doc.reviewer.lastName}</p>
+                                <p>
+                                  <strong>Revisado por:</strong>{' '}
+                                  {doc.reviewer.firstName}{' '}
+                                  {doc.reviewer.lastName}
+                                </p>
                               )}
                             </div>
                           </div>
@@ -521,7 +620,8 @@ export default function KycPage() {
                           {doc.rejectionReason && (
                             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded">
                               <p className="text-sm text-red-800">
-                                <strong>Motivo da rejeição:</strong> {doc.rejectionReason}
+                                <strong>Motivo da rejeição:</strong>{' '}
+                                {doc.rejectionReason}
                               </p>
                             </div>
                           )}
@@ -546,7 +646,12 @@ export default function KycPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(`/api/kyc/documents/${doc.id}/download`, '_blank')}
+                              onClick={() =>
+                                window.open(
+                                  `/api/kyc/documents/${doc.id}/download`,
+                                  '_blank'
+                                )
+                              }
                               className="flex-1"
                             >
                               <Download className="h-4 w-4 mr-2" />
@@ -573,29 +678,42 @@ export default function KycPage() {
                   {kycData.reviews.length === 0 ? (
                     <div className="text-center py-8">
                       <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">Nenhuma revisão realizada ainda</p>
+                      <p className="text-gray-500">
+                        Nenhuma revisão realizada ainda
+                      </p>
                       <p className="text-sm text-gray-400">
-                        As revisões aparecerão aqui quando os documentos forem analisados
+                        As revisões aparecerão aqui quando os documentos forem
+                        analisados
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {kycData.reviews.map((review) => (
-                        <div key={review.id} className="border-l-4 border-blue-200 pl-4 py-2">
+                      {kycData.reviews.map(review => (
+                        <div
+                          key={review.id}
+                          className="border-l-4 border-blue-200 pl-4 py-2"
+                        >
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
                               {getDocumentStatusIcon(review.action)}
                               <span className="font-medium">
-                                {review.document ? getDocumentTypeName(review.document.type) : 'KYC Geral'}
+                                {review.document
+                                  ? getDocumentTypeName(review.document.type)
+                                  : 'KYC Geral'}
                               </span>
                             </div>
-                            <Badge className={getDocumentStatusColor(review.action)}>
+                            <Badge
+                              className={getDocumentStatusColor(review.action)}
+                            >
                               {getDocumentStatusName(review.action)}
                             </Badge>
                           </div>
 
                           <div className="text-sm text-gray-600">
-                            <p>Por: {review.reviewer.firstName} {review.reviewer.lastName}</p>
+                            <p>
+                              Por: {review.reviewer.firstName}{' '}
+                              {review.reviewer.lastName}
+                            </p>
                             <p>Em: {formatDate(review.createdAt)}</p>
                             {review.comment && (
                               <p className="mt-1 italic">"{review.comment}"</p>

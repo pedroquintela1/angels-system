@@ -9,10 +9,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
     // Check if user is admin
@@ -21,11 +18,8 @@ export async function GET(request: NextRequest) {
       select: { role: true },
     });
 
-    if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
-      );
+    if (user?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -96,7 +90,7 @@ export async function GET(request: NextRequest) {
       if (reportType === 'financial' || reportType === 'investments') {
         // Investments CSV
         csvContent = 'ID,Data,Usuário,Email,Oportunidade,Valor\n';
-        
+
         investments.forEach(investment => {
           const row = [
             investment.id,
@@ -105,17 +99,23 @@ export async function GET(request: NextRequest) {
             investment.user.email,
             investment.opportunity?.title || 'N/A',
             investment.amount.toString(),
-          ].map(field => `"${field}"`).join(',');
-          
+          ]
+            .map(field => `"${field}"`)
+            .join(',');
+
           csvContent += row + '\n';
         });
       } else if (reportType === 'opportunities') {
         // Opportunities CSV
-        csvContent = 'ID,Título,Meta,Captado,Investidores,Status,Data Criação\n';
-        
+        csvContent =
+          'ID,Título,Meta,Captado,Investidores,Status,Data Criação\n';
+
         opportunities.forEach(opportunity => {
-          const totalRaised = opportunity.investments.reduce((sum, inv) => sum + inv.amount, 0);
-          
+          const totalRaised = opportunity.investments.reduce(
+            (sum, inv) => sum + inv.amount,
+            0
+          );
+
           const row = [
             opportunity.id,
             opportunity.title,
@@ -124,8 +124,10 @@ export async function GET(request: NextRequest) {
             opportunity._count.investments.toString(),
             opportunity.status,
             opportunity.createdAt.toLocaleDateString('pt-BR'),
-          ].map(field => `"${field}"`).join(',');
-          
+          ]
+            .map(field => `"${field}"`)
+            .join(',');
+
           csvContent += row + '\n';
         });
       }
@@ -154,9 +156,11 @@ export async function GET(request: NextRequest) {
           totalInvestments: investments.length,
           totalAmount: investments.reduce((sum, inv) => sum + inv.amount, 0),
           totalOpportunities: opportunities.length,
-          averageInvestment: investments.length > 0 
-            ? investments.reduce((sum, inv) => sum + inv.amount, 0) / investments.length 
-            : 0,
+          averageInvestment:
+            investments.length > 0
+              ? investments.reduce((sum, inv) => sum + inv.amount, 0) /
+                investments.length
+              : 0,
         },
         investments: investments.map(investment => ({
           id: investment.id,
@@ -167,15 +171,20 @@ export async function GET(request: NextRequest) {
             name: `${investment.user.firstName} ${investment.user.lastName}`,
             email: investment.user.email,
           },
-          opportunity: investment.opportunity ? {
-            id: investment.opportunity.id,
-            title: investment.opportunity.title,
-          } : null,
+          opportunity: investment.opportunity
+            ? {
+                id: investment.opportunity.id,
+                title: investment.opportunity.title,
+              }
+            : null,
         })),
         opportunities: opportunities.map(opportunity => {
-          const totalRaised = opportunity.investments.reduce((sum, inv) => sum + inv.amount, 0);
+          const totalRaised = opportunity.investments.reduce(
+            (sum, inv) => sum + inv.amount,
+            0
+          );
           const progress = (totalRaised / opportunity.targetAmount) * 100;
-          
+
           return {
             id: opportunity.id,
             title: opportunity.title,
@@ -200,10 +209,10 @@ export async function GET(request: NextRequest) {
       // For XLSX format, we would need a library like 'xlsx' or 'exceljs'
       // For now, return a message indicating it's not implemented
       return NextResponse.json(
-        { 
+        {
           error: 'Formato XLSX não implementado ainda',
           message: 'Use formato CSV ou JSON por enquanto',
-          availableFormats: ['csv', 'json']
+          availableFormats: ['csv', 'json'],
         },
         { status: 501 }
       );
@@ -213,7 +222,6 @@ export async function GET(request: NextRequest) {
       { error: 'Formato não suportado' },
       { status: 400 }
     );
-
   } catch (error) {
     console.error('Export report API error:', error);
     return NextResponse.json(

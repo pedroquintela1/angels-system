@@ -28,11 +28,11 @@ export async function requireAuth() {
  */
 export async function requireRole(allowedRoles: UserRole[]) {
   const user = await requireAuth();
-  
+
   if (!allowedRoles.includes(user.role)) {
     redirect('/unauthorized');
   }
-  
+
   return user;
 }
 
@@ -40,14 +40,14 @@ export async function requireRole(allowedRoles: UserRole[]) {
  * Require admin role
  */
 export async function requireAdmin() {
-  return requireRole([UserRole.ADMIN, UserRole.SUPER_ADMIN]);
+  return requireRole([UserRole.ADMIN]);
 }
 
 /**
- * Require super admin role
+ * Require super admin role - now same as admin
  */
 export async function requireSuperAdmin() {
-  return requireRole([UserRole.SUPER_ADMIN]);
+  return requireRole([UserRole.ADMIN]);
 }
 
 /**
@@ -61,12 +61,5 @@ export function hasRole(userRole: UserRole, allowedRoles: UserRole[]): boolean {
  * Check if user is admin
  */
 export function isAdmin(userRole: UserRole): boolean {
-  return hasRole(userRole, [UserRole.ADMIN, UserRole.SUPER_ADMIN]);
-}
-
-/**
- * Check if user is super admin
- */
-export function isSuperAdmin(userRole: UserRole): boolean {
-  return userRole === UserRole.SUPER_ADMIN;
+  return hasRole(userRole, [UserRole.ADMIN]);
 }

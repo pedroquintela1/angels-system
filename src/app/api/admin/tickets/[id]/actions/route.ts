@@ -80,7 +80,7 @@ export const POST = withAuth(
             );
           }
           
-          if (!['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(agent.role)) {
+          if (!['ADMIN', 'SUPPORT'].includes(agent.role)) {
             return NextResponse.json(
               { error: 'Usuário não tem permissão para ser agente de suporte' },
               { status: 400 }

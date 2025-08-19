@@ -67,45 +67,76 @@ export const USER_ROLE_TRANSLATIONS = {
   USER: 'Usuário',
   SUPPORT: 'Suporte',
   FINANCIAL: 'Financeiro',
-  ADMIN: 'Admin',
-  SUPER_ADMIN: 'Super Admin',
+  ADMIN: 'Administrador',
 } as const;
 
 // Funções utilitárias para tradução
 export function translateMembershipStatus(status: string): string {
-  return MEMBERSHIP_STATUS_TRANSLATIONS[status as keyof typeof MEMBERSHIP_STATUS_TRANSLATIONS] || status;
+  return (
+    MEMBERSHIP_STATUS_TRANSLATIONS[
+      status as keyof typeof MEMBERSHIP_STATUS_TRANSLATIONS
+    ] || status
+  );
 }
 
 export function translateKycStatus(status: string): string {
-  return KYC_STATUS_TRANSLATIONS[status as keyof typeof KYC_STATUS_TRANSLATIONS] || status;
+  return (
+    KYC_STATUS_TRANSLATIONS[status as keyof typeof KYC_STATUS_TRANSLATIONS] ||
+    status
+  );
 }
 
 export function translateInvestmentStatus(status: string): string {
-  return INVESTMENT_STATUS_TRANSLATIONS[status as keyof typeof INVESTMENT_STATUS_TRANSLATIONS] || status;
+  return (
+    INVESTMENT_STATUS_TRANSLATIONS[
+      status as keyof typeof INVESTMENT_STATUS_TRANSLATIONS
+    ] || status
+  );
 }
 
 export function translateTicketStatus(status: string): string {
-  return TICKET_STATUS_TRANSLATIONS[status as keyof typeof TICKET_STATUS_TRANSLATIONS] || status;
+  return (
+    TICKET_STATUS_TRANSLATIONS[
+      status as keyof typeof TICKET_STATUS_TRANSLATIONS
+    ] || status
+  );
 }
 
 export function translateTicketPriority(priority: string): string {
-  return TICKET_PRIORITY_TRANSLATIONS[priority as keyof typeof TICKET_PRIORITY_TRANSLATIONS] || priority;
+  return (
+    TICKET_PRIORITY_TRANSLATIONS[
+      priority as keyof typeof TICKET_PRIORITY_TRANSLATIONS
+    ] || priority
+  );
 }
 
 export function translateTransactionStatus(status: string): string {
-  return TRANSACTION_STATUS_TRANSLATIONS[status as keyof typeof TRANSACTION_STATUS_TRANSLATIONS] || status;
+  return (
+    TRANSACTION_STATUS_TRANSLATIONS[
+      status as keyof typeof TRANSACTION_STATUS_TRANSLATIONS
+    ] || status
+  );
 }
 
 export function translateTransactionType(type: string): string {
-  return TRANSACTION_TYPE_TRANSLATIONS[type as keyof typeof TRANSACTION_TYPE_TRANSLATIONS] || type;
+  return (
+    TRANSACTION_TYPE_TRANSLATIONS[
+      type as keyof typeof TRANSACTION_TYPE_TRANSLATIONS
+    ] || type
+  );
 }
 
 export function translateUserRole(role: string): string {
-  return USER_ROLE_TRANSLATIONS[role as keyof typeof USER_ROLE_TRANSLATIONS] || role;
+  return (
+    USER_ROLE_TRANSLATIONS[role as keyof typeof USER_ROLE_TRANSLATIONS] || role
+  );
 }
 
 // Função genérica para traduzir qualquer status
-export function translateStatus(status: string, type: 'membership' | 'kyc' | 'investment' | 'ticket' | 'transaction'): string {
+export function translateStatus(
+  status: string,
+  type: 'membership' | 'kyc' | 'investment' | 'ticket' | 'transaction'
+): string {
   switch (type) {
     case 'membership':
       return translateMembershipStatus(status);
@@ -130,21 +161,21 @@ export const UI_TEXTS = {
   PROCESSING: 'Processando...',
   SAVING: 'Salvando...',
   SUBMITTING: 'Enviando...',
-  
+
   // Error messages
   ERROR: 'Erro',
   ERROR_LOADING: 'Erro ao carregar dados',
   ERROR_SAVING: 'Erro ao salvar',
   ERROR_UNKNOWN: 'Erro desconhecido',
   ERROR_NETWORK: 'Erro de conexão',
-  
+
   // Success messages
   SUCCESS: 'Sucesso',
   SAVED_SUCCESSFULLY: 'Salvo com sucesso',
   UPDATED_SUCCESSFULLY: 'Atualizado com sucesso',
   CREATED_SUCCESSFULLY: 'Criado com sucesso',
   DELETED_SUCCESSFULLY: 'Excluído com sucesso',
-  
+
   // Common actions
   SAVE: 'Salvar',
   CANCEL: 'Cancelar',
@@ -155,14 +186,14 @@ export const UI_TEXTS = {
   UPDATE: 'Atualizar',
   SUBMIT: 'Enviar',
   CONFIRM: 'Confirmar',
-  
+
   // Navigation
   BACK: 'Voltar',
   NEXT: 'Próximo',
   PREVIOUS: 'Anterior',
   HOME: 'Início',
   DASHBOARD: 'Painel',
-  
+
   // Common labels
   NAME: 'Nome',
   EMAIL: 'Email',

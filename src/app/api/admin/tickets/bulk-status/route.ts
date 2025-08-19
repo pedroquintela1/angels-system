@@ -17,7 +17,7 @@ export const POST = withAuth(
       const { ticketIds, status } = BulkStatusSchema.parse(body);
 
       // Verificar se o usuário tem permissão para alterar status de tickets
-      if (!['SUPER_ADMIN', 'ADMIN', 'SUPPORT'].includes(user.role)) {
+      if (!['ADMIN', 'ADMIN', 'SUPPORT'].includes(user.role)) {
         return NextResponse.json(
           { error: 'Acesso negado' },
           { status: 403 }
@@ -114,6 +114,6 @@ export const POST = withAuth(
     action: Action.UPDATE,
     requireAuth: true,
     ownershipCheck: false,
-    allowedRoles: [UserRole.SUPPORT, UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    allowedRoles: [UserRole.SUPPORT, UserRole.ADMIN, UserRole.ADMIN]
   }
 );

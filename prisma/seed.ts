@@ -33,25 +33,6 @@ async function main() {
   // Create users
   const hashedPassword = await bcrypt.hash('123456', 12);
 
-  // Super Admin
-  const superAdmin = await prisma.user.create({
-    data: {
-      firstName: 'Super',
-      lastName: 'Admin',
-      email: 'admin@angelssystem.com',
-      password: hashedPassword,
-      phone: '11999999999',
-      cpf: '11111111111',
-      birthDate: new Date('1990-01-01'),
-      referralCode: 'SUPERADM',
-      role: UserRole.SUPER_ADMIN,
-      kycStatus: KycStatus.APPROVED,
-      kycSubmittedAt: new Date('2025-01-01T10:00:00Z'),
-      kycApprovedAt: new Date('2025-01-01T14:00:00Z'),
-      isActive: true,
-    },
-  });
-
   // Admin
   const admin = await prisma.user.create({
     data: {
@@ -164,6 +145,192 @@ async function main() {
     },
   });
 
+  // Criar 100 usuários normais de exemplo
+  const normalUsers = [];
+  const firstNames = [
+    'Ana',
+    'Bruno',
+    'Carlos',
+    'Diana',
+    'Eduardo',
+    'Fernanda',
+    'Gabriel',
+    'Helena',
+    'Igor',
+    'Julia',
+    'Karina',
+    'Lucas',
+    'Marina',
+    'Nicolas',
+    'Olivia',
+    'Paulo',
+    'Quezia',
+    'Rafael',
+    'Sofia',
+    'Thiago',
+    'Ursula',
+    'Victor',
+    'Wesley',
+    'Ximena',
+    'Yuri',
+    'Zara',
+    'André',
+    'Beatriz',
+    'Caio',
+    'Débora',
+    'Elias',
+    'Fabiana',
+    'Gustavo',
+    'Heloisa',
+    'Ivan',
+    'Joana',
+    'Klaus',
+    'Larissa',
+    'Marcelo',
+    'Natalia',
+    'Oscar',
+    'Priscila',
+    'Roberto',
+    'Sabrina',
+    'Tiago',
+    'Vanessa',
+    'Wagner',
+    'Yasmin',
+    'Zeca',
+    'Amanda',
+  ];
+
+  const lastNames = [
+    'Silva',
+    'Santos',
+    'Oliveira',
+    'Souza',
+    'Rodrigues',
+    'Ferreira',
+    'Alves',
+    'Pereira',
+    'Lima',
+    'Gomes',
+    'Costa',
+    'Ribeiro',
+    'Martins',
+    'Carvalho',
+    'Almeida',
+    'Lopes',
+    'Soares',
+    'Fernandes',
+    'Vieira',
+    'Barbosa',
+    'Rocha',
+    'Dias',
+    'Monteiro',
+    'Mendes',
+    'Ramos',
+    'Moreira',
+    'Cardoso',
+    'Reis',
+    'Araújo',
+    'Castro',
+    'Correia',
+    'Machado',
+    'Freitas',
+    'Teixeira',
+    'Melo',
+    'Campos',
+    'Gonçalves',
+    'Moura',
+    'Cunha',
+    'Pinto',
+    'Cavalcanti',
+    'Nascimento',
+    'Azevedo',
+    'Barros',
+    'Farias',
+    'Nunes',
+    'Moraes',
+    'Duarte',
+    'Nogueira',
+    'Andrade',
+  ];
+
+  console.log('👥 Criando 100 usuários normais...');
+
+  for (let i = 1; i <= 100; i++) {
+    const firstName = firstNames[i % firstNames.length];
+    const lastName = lastNames[i % lastNames.length];
+    const cpfBase = String(i).padStart(8, '0');
+    const cpf = `${cpfBase}001`;
+    const phone = `119${String(i).padStart(8, '0')}`;
+    const birthYear = 1980 + (i % 25); // Idades entre 20 e 45 anos
+    const kycStatuses = [
+      KycStatus.APPROVED,
+      KycStatus.PENDING,
+      KycStatus.REJECTED,
+    ];
+    const kycStatus = kycStatuses[i % 3];
+
+    const userData: any = {
+      firstName: `${firstName}${i > 50 ? i : ''}`,
+      lastName: lastName,
+      email: `${firstName.toLowerCase()}${i}@email.com`,
+      password: hashedPassword,
+      phone: phone,
+      cpf: cpf,
+      birthDate: new Date(`${birthYear}-${(i % 12) + 1}-${(i % 28) + 1}`),
+      referralCode: `${firstName.toUpperCase()}${String(i).padStart(3, '0')}`,
+      role: UserRole.USER,
+      kycStatus: kycStatus,
+      isActive: i % 10 !== 0, // 90% ativos, 10% inativos
+    };
+
+    // Adicionar datas de KYC se aprovado ou rejeitado
+    if (kycStatus === KycStatus.APPROVED) {
+      const daySubmitted = Math.min((i % 28) + 1, 28);
+      const hourSubmitted = Math.min(i % 24, 23);
+      userData.kycSubmittedAt = new Date(
+        `2025-01-${daySubmitted.toString().padStart(2, '0')}T${hourSubmitted.toString().padStart(2, '0')}:00:00Z`
+      );
+      userData.kycApprovedAt = new Date(
+        `2025-01-${daySubmitted.toString().padStart(2, '0')}T${Math.min(
+          hourSubmitted + 1,
+          23
+        )
+          .toString()
+          .padStart(2, '0')}:00:00Z`
+      );
+    } else if (kycStatus === KycStatus.PENDING) {
+      const daySubmitted = Math.min((i % 28) + 1, 28);
+      const hourSubmitted = Math.min(i % 24, 23);
+      userData.kycSubmittedAt = new Date(
+        `2025-01-${daySubmitted.toString().padStart(2, '0')}T${hourSubmitted.toString().padStart(2, '0')}:00:00Z`
+      );
+    } else if (kycStatus === KycStatus.REJECTED) {
+      const daySubmitted = Math.min((i % 28) + 1, 28);
+      const hourSubmitted = Math.min(i % 24, 23);
+      userData.kycSubmittedAt = new Date(
+        `2025-01-${daySubmitted.toString().padStart(2, '0')}T${hourSubmitted.toString().padStart(2, '0')}:00:00Z`
+      );
+      userData.kycRejectedAt = new Date(
+        `2025-01-${daySubmitted.toString().padStart(2, '0')}T${Math.min(
+          hourSubmitted + 2,
+          23
+        )
+          .toString()
+          .padStart(2, '0')}:00:00Z`
+      );
+      userData.kycRejectionReason = 'Documento ilegível ou incompleto';
+    }
+
+    const newUser = await prisma.user.create({ data: userData });
+    normalUsers.push(newUser);
+
+    if (i % 20 === 0) {
+      console.log(`  ✓ ${i} usuários criados...`);
+    }
+  }
+
+  console.log('✅ 100 usuários normais criados com sucesso!');
+
   console.log('👥 Usuários criados');
 
   // Create memberships
@@ -172,7 +339,6 @@ async function main() {
   nextMonth.setMonth(nextMonth.getMonth() + 1);
 
   const memberships = [
-    { userId: superAdmin.id, status: MembershipStatus.ACTIVE },
     { userId: admin.id, status: MembershipStatus.ACTIVE },
     { userId: support.id, status: MembershipStatus.ACTIVE },
     { userId: financial.id, status: MembershipStatus.ACTIVE },
@@ -209,7 +375,6 @@ async function main() {
       startDate: new Date('2025-01-01'),
       endDate: new Date('2025-09-30'),
       status: InvestmentStatus.ACTIVE,
-      expectedReturn: 12.5,
     },
   });
 
@@ -225,7 +390,6 @@ async function main() {
       startDate: new Date('2024-06-01'),
       endDate: new Date('2024-12-31'),
       status: InvestmentStatus.COMPLETED,
-      expectedReturn: 15.8,
     },
   });
 
@@ -241,7 +405,6 @@ async function main() {
       startDate: new Date('2025-02-01'),
       endDate: new Date('2025-11-30'),
       status: InvestmentStatus.ACTIVE,
-      expectedReturn: 18.3,
     },
   });
 
@@ -457,9 +620,9 @@ async function main() {
   console.log('');
   console.log('📊 Dados criados:');
   console.log(
-    '- 7 usuários (1 Super Admin, 1 Admin, 1 Suporte, 1 Financeiro, 3 Usuários)'
+    '- 107 usuários (1 Admin, 1 Suporte, 1 Financeiro, 104 Usuários)'
   );
-  console.log('- 7 memberships');
+  console.log('- Memberships para todos os usuários');
   console.log('- 3 oportunidades de investimento');
   console.log('- 4 investimentos de usuários');
   console.log('- 1 retorno de investimento');
@@ -469,13 +632,15 @@ async function main() {
   console.log('- 5 notificações');
   console.log('');
   console.log('🔑 Credenciais de acesso:');
-  console.log('Super Admin: admin@angelssystem.com / 123456');
   console.log('Admin: admin2@angelssystem.com / 123456');
   console.log('Suporte: suporte@angelssystem.com / 123456');
   console.log('Financeiro: financeiro@angelssystem.com / 123456');
   console.log('Usuário 1: joao@email.com / 123456');
   console.log('Usuário 2: maria@email.com / 123456');
   console.log('Usuário 3: pedro@email.com / 123456');
+  console.log(
+    'Usuários normais: ana1@email.com, bruno2@email.com, etc. / 123456'
+  );
 }
 
 main()

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has admin access
-    const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
+    const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.ADMIN];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
       return NextResponse.json(
         { error: 'Acesso negado' },

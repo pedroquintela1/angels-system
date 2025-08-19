@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withAuth } from '@/lib/middleware/auth';
-import { UserRole, Resource, Action, getRolePermissions } from '@/lib/permissions';
+import {
+  UserRole,
+  Resource,
+  Action,
+  getRolePermissions,
+} from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 
 // Schema para filtros de usuários
 const GetUsersSchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(20),
+  limit: z.coerce.number().min(1).max(500).default(20),
   role: z.nativeEnum(UserRole).optional(),
   search: z.string().optional(),
   isActive: z.coerce.boolean().optional(),
@@ -23,23 +28,17 @@ export const GET = withAuth(
     try {
       const { searchParams } = new URL(request.url);
       const queryParams = Object.fromEntries(searchParams.entries());
-      
-      const {
-        page,
-        limit,
-        role,
-        search,
-        isActive,
-        kycStatus,
-      } = GetUsersSchema.parse(queryParams);
-      
+
+      const { page, limit, role, search, isActive, kycStatus } =
+        GetUsersSchema.parse(queryParams);
+
       // Construir filtros para a query
       const where: any = {};
-      
+
       if (role) {
         where.role = role;
       }
-      
+
       if (search) {
         where.OR = [
           { firstName: { contains: search, mode: 'insensitive' } },
@@ -47,18 +46,18 @@ export const GET = withAuth(
           { email: { contains: search, mode: 'insensitive' } },
         ];
       }
-      
+
       if (isActive !== undefined) {
         where.isActive = isActive;
       }
-      
+
       if (kycStatus) {
         where.kycStatus = kycStatus;
       }
-      
+
       // Calcular offset para paginação
       const offset = (page - 1) * limit;
-      
+
       // Buscar usuários com contagem total
       const [users, totalCount] = await Promise.all([
         prisma.user.findMany({
@@ -82,21 +81,18 @@ export const GET = withAuth(
               },
             },
           },
-          orderBy: [
-            { isActive: 'desc' },
-            { createdAt: 'desc' },
-          ],
+          orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
           skip: offset,
           take: limit,
         }),
         prisma.user.count({ where }),
       ]);
-      
+
       // Enriquecer dados dos usuários com informações de permissões
       const enrichedUsers = users.map(user => {
         const userRole = user.role as UserRole;
         const permissions = getRolePermissions(userRole);
-        
+
         return {
           ...user,
           roleInfo: {
@@ -112,12 +108,12 @@ export const GET = withAuth(
           },
         };
       });
-      
+
       // Calcular metadados de paginação
       const totalPages = Math.ceil(totalCount / limit);
       const hasNextPage = page < totalPages;
       const hasPreviousPage = page > 1;
-      
+
       return NextResponse.json({
         users: enrichedUsers,
         pagination: {
@@ -135,17 +131,16 @@ export const GET = withAuth(
           kycDistribution: getKycDistribution(users),
         },
       });
-      
     } catch (error) {
       console.error('Get users error:', error);
-      
+
       if (error instanceof z.ZodError) {
         return NextResponse.json(
           { error: 'Parâmetros inválidos', details: error.issues },
           { status: 400 }
         );
       }
-      
+
       return NextResponse.json(
         { error: 'Erro interno do servidor' },
         { status: 500 }
@@ -157,7 +152,7 @@ export const GET = withAuth(
     action: Action.READ,
     requireAuth: true,
     ownershipCheck: false,
-    allowedRoles: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SUPPORT],
+    allowedRoles: [UserRole.ADMIN, UserRole.SUPPORT],
   }
 );
 
@@ -168,9 +163,8 @@ function getRoleName(role: UserRole): string {
     [UserRole.SUPPORT]: 'Suporte',
     [UserRole.FINANCIAL]: 'Financeiro',
     [UserRole.ADMIN]: 'Administrador',
-    [UserRole.SUPER_ADMIN]: 'Super Administrador',
   };
-  
+
   return roleNames[role] || 'Desconhecido';
 }
 
@@ -180,20 +174,19 @@ function getRoleLevel(role: UserRole): number {
     [UserRole.SUPPORT]: 2,
     [UserRole.FINANCIAL]: 2,
     [UserRole.ADMIN]: 3,
-    [UserRole.SUPER_ADMIN]: 4,
   };
-  
+
   return roleLevels[role] || 0;
 }
 
 function getRoleDistribution(users: any[]): Record<string, number> {
   const distribution: Record<string, number> = {};
-  
+
   users.forEach(user => {
     const roleName = getRoleName(user.role as UserRole);
     distribution[roleName] = (distribution[roleName] || 0) + 1;
   });
-  
+
   return distribution;
 }
 
@@ -203,11 +196,11 @@ function getKycDistribution(users: any[]): Record<string, number> {
     APPROVED: 0,
     REJECTED: 0,
   };
-  
+
   users.forEach(user => {
     const status = user.kycStatus || 'PENDING';
     distribution[status] = (distribution[status] || 0) + 1;
   });
-  
+
   return distribution;
 }

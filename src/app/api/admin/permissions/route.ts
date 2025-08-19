@@ -96,7 +96,7 @@ export const GET = withAuth(
     action: Action.READ,
     requireAuth: true,
     ownershipCheck: false,
-    allowedRoles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  allowedRoles: [UserRole.ADMIN],
   }
 );
 
@@ -128,23 +128,20 @@ export const POST = withAuth(
       const targetUserRole = targetUser.role as UserRole;
       const newRole = validatedData.newRole;
       
-      // Super Admin pode alterar qualquer role
-      if (currentUserRole !== UserRole.SUPER_ADMIN) {
-        // Admin pode alterar roles menores que o seu
-        if (currentUserRole === UserRole.ADMIN) {
-          const restrictedRoles = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
-          if (restrictedRoles.includes(targetUserRole) || restrictedRoles.includes(newRole)) {
-            return NextResponse.json(
-              { error: 'Não é possível alterar este nível de acesso' },
-              { status: 403 }
-            );
-          }
-        } else {
-          return NextResponse.json(
-            { error: 'Permissão insuficiente para alterar roles' },
-            { status: 403 }
-          );
-        }
+      // Somente ADMIN pode alterar roles e não pode promover/rebaixar ADMIN
+      if (currentUserRole !== UserRole.ADMIN) {
+        return NextResponse.json(
+          { error: 'Permissão insuficiente para alterar roles' },
+          { status: 403 }
+        );
+      }
+
+      const restrictedRoles = [UserRole.ADMIN];
+      if (restrictedRoles.includes(targetUserRole) || restrictedRoles.includes(newRole)) {
+        return NextResponse.json(
+          { error: 'Não é possível alterar este nível de acesso' },
+          { status: 403 }
+        );
       }
       
       // Atualizar role do usuário
@@ -205,6 +202,6 @@ export const POST = withAuth(
     action: Action.UPDATE,
     requireAuth: true,
     ownershipCheck: false,
-    allowedRoles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  allowedRoles: [UserRole.ADMIN],
   }
 );

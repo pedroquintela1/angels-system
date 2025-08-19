@@ -17,7 +17,7 @@ export const POST = withAuth(
       const { ticketIds, assignedTo } = BulkAssignSchema.parse(body);
 
       // Verificar se o usuário tem permissão para atribuir tickets
-      if (!['SUPER_ADMIN', 'ADMIN', 'SUPPORT'].includes(user.role)) {
+      if (!['ADMIN', 'ADMIN', 'SUPPORT'].includes(user.role)) {
         return NextResponse.json(
           { error: 'Acesso negado' },
           { status: 403 }
@@ -46,7 +46,7 @@ export const POST = withAuth(
           select: { id: true, role: true }
         });
 
-        if (!agent || !['SUPER_ADMIN', 'ADMIN', 'SUPPORT'].includes(agent.role)) {
+        if (!agent || !['ADMIN', 'ADMIN', 'SUPPORT'].includes(agent.role)) {
           return NextResponse.json(
             { error: 'Agente não encontrado ou não tem permissão para receber tickets' },
             { status: 400 }
@@ -128,6 +128,6 @@ export const POST = withAuth(
     action: Action.ASSIGN,
     requireAuth: true,
     ownershipCheck: false,
-    allowedRoles: [UserRole.SUPPORT, UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    allowedRoles: [UserRole.SUPPORT, UserRole.ADMIN, UserRole.ADMIN]
   }
 );

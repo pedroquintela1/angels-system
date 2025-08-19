@@ -8,10 +8,12 @@ export function useAuth() {
     user: session?.user,
     isLoading: status === 'loading',
     isAuthenticated: !!session?.user,
-    isAdmin: session?.user?.role === UserRole.ADMIN || session?.user?.role === UserRole.SUPER_ADMIN,
-    isSuperAdmin: session?.user?.role === UserRole.SUPER_ADMIN,
+    isAdmin: session?.user?.role === UserRole.ADMIN,
+    isSuperAdmin: session?.user?.role === UserRole.ADMIN,
     hasRole: (roles: UserRole[]) => {
-      if (!session?.user?.role) {return false;}
+      if (!session?.user?.role) {
+        return false;
+      }
       return roles.includes(session.user.role);
     },
   };

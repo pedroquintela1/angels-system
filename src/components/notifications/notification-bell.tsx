@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, X, Trash2, CheckCheck } from 'lucide-react';
+import {
+  Bell,
+  Check,
+  X,
+  Trash2,
+  CheckCheck,
+  RefreshCw,
+  PartyPopper,
+  Megaphone,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +44,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
   const loadUnreadCount = async () => {
     try {
       const response = await fetch('/api/notifications/unread-count');
-      
+
       if (response.ok) {
         const data = await response.json();
         setUnreadCount(data.unreadCount);
@@ -50,7 +59,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
     try {
       setLoading(true);
       const response = await fetch('/api/notifications?limit=10');
-      
+
       if (response.ok) {
         const data = await response.json();
         setNotifications(data.notifications);
@@ -79,9 +88,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
 
       if (response.ok) {
         setNotifications(prev =>
-          prev.map(n =>
-            n.id === notificationId ? { ...n, isRead: true } : n
-          )
+          prev.map(n => (n.id === notificationId ? { ...n, isRead: true } : n))
         );
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
@@ -104,9 +111,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
       });
 
       if (response.ok) {
-        setNotifications(prev =>
-          prev.map(n => ({ ...n, isRead: true }))
-        );
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         setUnreadCount(0);
       }
     } catch (error) {
@@ -129,11 +134,11 @@ export function NotificationBell({ className }: NotificationBellProps) {
       });
 
       if (response.ok) {
-        const deletedNotification = notifications.find(n => n.id === notificationId);
-        setNotifications(prev =>
-          prev.filter(n => n.id !== notificationId)
+        const deletedNotification = notifications.find(
+          n => n.id === notificationId
         );
-        
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+
         // Update unread count if deleted notification was unread
         if (deletedNotification && !deletedNotification.isRead) {
           setUnreadCount(prev => Math.max(0, prev - 1));
@@ -148,15 +153,15 @@ export function NotificationBell({ className }: NotificationBellProps) {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'kyc_approved':
-        return '✅';
+        return <CheckCheck className="h-4 w-4 text-green-600" />;
       case 'kyc_rejected':
-        return '❌';
+        return <X className="h-4 w-4 text-red-600" />;
       case 'kyc_resubmit':
-        return '🔄';
+        return <RefreshCw className="h-4 w-4 text-yellow-600" />;
       case 'kyc_complete':
-        return '🎉';
+        return <PartyPopper className="h-4 w-4 text-purple-600" />;
       default:
-        return '📢';
+        return <Megaphone className="h-4 w-4 text-blue-600" />;
     }
   };
 
@@ -164,7 +169,9 @@ export function NotificationBell({ className }: NotificationBellProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    );
 
     if (diffInHours < 1) {
       return 'Agora há pouco';
@@ -179,10 +186,10 @@ export function NotificationBell({ className }: NotificationBellProps) {
   // Load unread count on mount and set up polling
   useEffect(() => {
     loadUnreadCount();
-    
+
     // Poll for unread count every 30 seconds
     const interval = setInterval(loadUnreadCount, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -199,8 +206,8 @@ export function NotificationBell({ className }: NotificationBellProps) {
         <Button variant="ghost" size="sm" className={`relative ${className}`}>
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-bold"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
@@ -208,7 +215,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
           )}
         </Button>
       </PopoverTrigger>
-      
+
       <PopoverContent align="end" className="w-80 p-0">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b">
@@ -225,7 +232,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
             </Button>
           )}
         </div>
-        
+
         {/* Content */}
         <ScrollArea className="max-h-64">
           {loading ? (
@@ -238,7 +245,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((notification) => (
+              {notifications.map(notification => (
                 <div
                   key={notification.id}
                   className={`p-3 cursor-pointer hover:bg-gray-50 ${
@@ -254,24 +261,28 @@ export function NotificationBell({ className }: NotificationBellProps) {
                     <div className="text-lg">
                       {getNotificationIcon(notification.type)}
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h4 className={`text-sm font-medium truncate ${
-                          !notification.isRead ? 'text-blue-900' : 'text-gray-900'
-                        }`}>
+                        <h4
+                          className={`text-sm font-medium truncate ${
+                            !notification.isRead
+                              ? 'text-blue-900'
+                              : 'text-gray-900'
+                          }`}
+                        >
                           {notification.title}
                         </h4>
-                        
+
                         <div className="flex items-center gap-1 ml-2">
                           {!notification.isRead && (
                             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                           )}
-                          
+
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               deleteNotification(notification.id);
                             }}
@@ -281,11 +292,11 @@ export function NotificationBell({ className }: NotificationBellProps) {
                           </Button>
                         </div>
                       </div>
-                      
+
                       <p className="text-xs text-gray-600 mt-1 line-clamp-2">
                         {notification.message}
                       </p>
-                      
+
                       <p className="text-xs text-gray-400 mt-1">
                         {formatDate(notification.createdAt)}
                       </p>
@@ -296,7 +307,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
             </div>
           )}
         </ScrollArea>
-        
+
         {/* Footer */}
         {notifications.length > 0 && (
           <div className="p-3 border-t">

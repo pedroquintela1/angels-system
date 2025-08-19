@@ -86,7 +86,7 @@ export const POST = withAuth(
           );
         }
 
-        if (!['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(agent.role)) {
+        if (!['ADMIN', 'ADMIN', 'SUPPORT'].includes(agent.role)) {
           return NextResponse.json(
             { error: 'Usuário não tem permissão para ser agente de suporte' },
             { status: 400 }
@@ -207,7 +207,7 @@ export const GET = withAuth(
       // Buscar todos os agentes de suporte
       const agents = await prisma.user.findMany({
         where: {
-          role: { in: ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'] },
+          role: { in: ['ADMIN', 'ADMIN', 'SUPPORT'] },
         },
         select: {
           id: true,
@@ -333,7 +333,7 @@ async function getNextAvailableAgent(priority?: string): Promise<string | null> 
   // Buscar agentes de suporte ativos
   const agents = await prisma.user.findMany({
     where: {
-      role: { in: ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'] },
+      role: { in: ['ADMIN', 'ADMIN', 'SUPPORT'] },
     },
     select: {
       id: true,
