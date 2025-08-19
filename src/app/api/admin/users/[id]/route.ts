@@ -63,7 +63,8 @@ export async function GET(
     }
 
     // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    const userWithoutPassword = user;
+    delete (userWithoutPassword as any).password;
 
     return NextResponse.json({
       user: userWithoutPassword,
@@ -174,7 +175,8 @@ export async function PATCH(
     });
 
     // Remove password from response
-    const { password: _, ...userWithoutPassword } = updatedUser;
+    const userWithoutPassword = updatedUser;
+    delete (userWithoutPassword as any).password;
 
     return NextResponse.json({
       message: 'Usuário atualizado com sucesso',
